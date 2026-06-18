@@ -1,15 +1,22 @@
 import os
 import time
+import json
+
 
 FLUIDSYNTH_BIN = r"C:\Users\micro1\Downloads\fluidsynth\fluidsynth-v2.5.5-win10-x64-cpp11\bin"
 
 os.add_dll_directory(FLUIDSYNTH_BIN)
 os.environ["PATH"] = FLUIDSYNTH_BIN + os.pathsep + os.environ["PATH"]
 
-import fluidsynth
+with open(
+    r"C:\Users\micro1\Desktop\projeto final\ENG4033-ProjetoFinal\py\music_player\batidas.json",
+    "r",
+    encoding="utf-8"
+) as arquivo:
+    BATIDAS = json.load(arquivo)
 
 SOUNDFONT = r"C:\Users\micro1\Downloads\FluidR3_GM.sf2"
-
+import fluidsynth
 INSTRUMENTOS = {
     "piano": {"canal": 0, "programa": 0},
     "baixo": {"canal": 1, "programa": 33},
@@ -36,36 +43,6 @@ sequencia = [
     {"nota": 67, "inicio": 4000, "duracao": 1000, "instrumento": "orgao"},
 ]
 
-BATIDAS = {
-    "rock": [
-        {"nota": 36, "inicio": 0,    "duracao": 100, "instrumento": "bateria"},  # bumbo
-        {"nota": 38, "inicio": 500,  "duracao": 100, "instrumento": "bateria"},  # caixa
-        {"nota": 36, "inicio": 1000, "duracao": 100, "instrumento": "bateria"},
-        {"nota": 38, "inicio": 1500, "duracao": 100, "instrumento": "bateria"},
-    ],
-
-    "simples": [
-        {"nota": 36, "inicio": 0,    "duracao": 100, "instrumento": "bateria"},
-        {"nota": 36, "inicio": 1000, "duracao": 100, "instrumento": "bateria"},
-    ],
-
-    "hihat": [
-        {"nota": 42, "inicio": 0,    "duracao": 80, "instrumento": "bateria"},
-        {"nota": 42, "inicio": 500,  "duracao": 80, "instrumento": "bateria"},
-        {"nota": 42, "inicio": 1000, "duracao": 80, "instrumento": "bateria"},
-        {"nota": 42, "inicio": 1500, "duracao": 80, "instrumento": "bateria"},
-    ],
-
-    "completo": [
-        {"nota": 36, "inicio": 0,    "duracao": 100, "instrumento": "bateria"},
-        {"nota": 42, "inicio": 0,    "duracao": 80,  "instrumento": "bateria"},
-        {"nota": 42, "inicio": 500,  "duracao": 80,  "instrumento": "bateria"},
-        {"nota": 38, "inicio": 1000, "duracao": 100, "instrumento": "bateria"},
-        {"nota": 42, "inicio": 1000, "duracao": 80,  "instrumento": "bateria"},
-        {"nota": 42, "inicio": 1500, "duracao": 0,  "instrumento": "bateria"},
-
-    ],
-}
 
 def calcular_duracao(sequencia):
     maior_fim = 0
@@ -91,8 +68,10 @@ def repetir_batida(batida, duracao_batida, duracao_musica):
 
     return batida_final
 duracao_musica = calcular_duracao(sequencia)
-batida_final = repetir_batida(BATIDAS["rock"],duracao_batida=2000,duracao_musica=duracao_musica)
 
+batida = BATIDAS["simples"]
+
+batida_final = repetir_batida(batida["eventos"],batida["duracao_padrao"],duracao_musica)
 duracao_total = 0
 while True:
     seq = fluidsynth.Sequencer(use_system_timer=False)
