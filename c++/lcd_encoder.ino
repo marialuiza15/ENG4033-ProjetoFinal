@@ -206,7 +206,7 @@ void desenharMenuPrincipal() {
   for (int i = 0; i < NUM_ITENS_MENU; i++) {
     lcd.setCursor(0, i + 1);
 
-    if (i == cursorMenu) lcd.write(byte(0));  // ►
+    if (i == cursorMenu) lcd.write(byte(0)); 
     else                 lcd.print(" ");
 
     lcd.print(itensMenu[i]);
