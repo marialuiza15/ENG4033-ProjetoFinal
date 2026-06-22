@@ -1,15 +1,45 @@
 import os
 import time
+import json
+from pathlib import Path
+
+
 
 FLUIDSYNTH_BIN = r"C:\Users\micro1\Downloads\fluidsynth\fluidsynth-v2.5.5-win10-x64-cpp11\bin"
 
 os.add_dll_directory(FLUIDSYNTH_BIN)
 os.environ["PATH"] = FLUIDSYNTH_BIN + os.pathsep + os.environ["PATH"]
 
-import fluidsynth
+
+PASTA_ATUAL = Path(__file__).parent
+PASTA_ARQUIVOS = PASTA_ATUAL / "arquivos_musicais"
+
+
+def carregar_json(caminho):
+    with open(caminho, "r", encoding="utf-8") as arquivo:
+        return json.load(arquivo)
+
+def salvar_json(caminho, dados):
+    with open(caminho, "w", encoding="utf-8") as arquivo:
+        json.dump(dados, arquivo, indent=4, ensure_ascii=False)
+
+
+batidas = carregar_json(PASTA_ARQUIVOS / "batidas.json")
+notas = carregar_json(PASTA_ARQUIVOS / "notas.json")
+parametros = carregar_json(PASTA_ARQUIVOS / "parametros.json")
+
+
+musica_completa = {
+    "instrumento": parametros["instrumento"],
+    "bpm": parametros["bpm"],
+    "estilo": parametros["estilo"],
+    "sequencia": notas["sequencia"]
+}
+
+salvar_json(PASTA_ARQUIVOS / "musica_completa.json", musica_completa)
 
 SOUNDFONT = r"C:\Users\micro1\Downloads\FluidR3_GM.sf2"
-
+import fluidsynth
 INSTRUMENTOS = {
     "piano": {"canal": 0, "programa": 0},
     "baixo": {"canal": 1, "programa": 33},
@@ -17,6 +47,7 @@ INSTRUMENTOS = {
     "sintetizador": {"canal": 3, "programa": 89},
     "orgao": {"canal": 4, "programa": 19},
     "strings": {"canal": 5, "programa": 48},
+    "bateria": {"canal": 9, "programa": 0}
 }
 
 fs = fluidsynth.Synth()
@@ -25,20 +56,84 @@ fs.start(driver="wasapi", midi_driver="none")
 sfid = fs.sfload(SOUNDFONT)
 
 for instrumento in INSTRUMENTOS.values():
-    fs.program_select(instrumento["canal"],sfid,0,instrumento["programa"])
+    if instrumento["programa"] is not None:
+        fs.program_select(instrumento["canal"],sfid,0,instrumento["programa"])
+
+def preparar_sequencia(musica):
+    sequencia_convertida = []
+
+    for evento in musica["sequencia"]:
+        novo_evento = evento.copy()
+        novo_evento["instrumento"] = musica["instrumento"]
+        sequencia_convertida.append(novo_evento)
+
+    return sequencia_convertida
+
+sequencia = preparar_sequencia(musica_completa)
 
 
-sequencia = [
-    {"nota": 60, "inicio": 0, "duracao": 1000, "instrumento": "orgao"},
-    {"nota": 64, "inicio": 0, "duracao": 1000, "instrumento": "orgao"},
-    {"nota": 67, "inicio": 4000, "duracao": 1000, "instrumento": "orgao"},
-]
+def ajustar_tempo_batida(valor_ms, bpm, bpm_base=120):
+    fator = bpm_base / bpm
+    return int(valor_ms * fator)
 
-duracao_total = 0
+def calcular_duracao(sequencia):
+    maior_fim = 0
+
+    for evento in sequencia:
+        fim = evento["inicio"] + evento["duracao"]
+        if fim > maior_fim:
+            maior_fim = fim
+
+    return maior_fim
+
+def preparar_batida(batida, bpm):
+    eventos = []
+
+    for evento in batida["eventos"]:
+        novo_evento = evento.copy()
+        novo_evento["inicio"] = ajustar_tempo_batida(evento["inicio"], bpm)
+        novo_evento["duracao"] = ajustar_tempo_batida(evento["duracao"], bpm)
+        eventos.append(novo_evento)
+
+    duracao_padrao = ajustar_tempo_batida(
+        batida["duracao_padrao"],
+        bpm
+    )
+
+    return eventos, duracao_padrao
+
+
+def repetir_batida(batida, duracao_batida, duracao_musica):
+    batida_final = []
+    deslocamento = 0
+
+    while deslocamento < duracao_musica:
+        for evento in batida:
+            novo_evento = evento.copy()
+            novo_evento["inicio"] = evento["inicio"] + deslocamento
+            batida_final.append(novo_evento)
+
+        deslocamento += duracao_batida
+
+    return batida_final
+
+
 while True:
     seq = fluidsynth.Sequencer(use_system_timer=False)
-    synth_id = seq.register_fluidsynth(fs) 
-    for evento in sequencia:
+    synth_id = seq.register_fluidsynth(fs)
+
+    duracao_musica = calcular_duracao(sequencia)
+
+    batida = batidas[musica_completa["estilo"]]
+
+    eventos_batida, duracao_batida = preparar_batida(batida,musica_completa["bpm"])
+
+    batida_final = repetir_batida(eventos_batida,duracao_batida,duracao_musica)
+    duracao_total = 0
+
+    sequencia_final = sequencia + batida_final
+
+    for evento in sequencia_final:
         nota = evento["nota"]
         inicio = evento["inicio"]
         duracao = evento["duracao"]
@@ -54,8 +149,10 @@ while True:
 
         if fim > duracao_total:
             duracao_total = fim
+    duracao_total = duracao_musica
 
-    for tempo in range(0, duracao_total + 500, 10):
+    for tempo in range(0, duracao_total+10, 10):
+        print(tempo)
         seq.process(tempo)
         time.sleep(0.01)
 

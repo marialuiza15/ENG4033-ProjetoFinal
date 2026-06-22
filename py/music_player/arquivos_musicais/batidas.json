@@ -1,0 +1,41 @@
+{
+    "rock": {
+      "duracao_padrao": 2000,
+      "eventos": [
+        {"nota": 36, "inicio": 0, "duracao": 100, "instrumento": "bateria"},
+        {"nota": 38, "inicio": 500, "duracao": 100, "instrumento": "bateria"},
+        {"nota": 36, "inicio": 1000, "duracao": 100, "instrumento": "bateria"},
+        {"nota": 38, "inicio": 1500, "duracao": 100, "instrumento": "bateria"}
+      ]
+    },
+  
+    "simples": {
+      "duracao_padrao": 2000,
+      "eventos": [
+        {"nota": 36, "inicio": 0, "duracao": 100, "instrumento": "bateria"},
+        {"nota": 36, "inicio": 1000, "duracao": 100, "instrumento": "bateria"}
+      ]
+    },
+  
+    "hihat": {
+      "duracao_padrao": 2000,
+      "eventos": [
+        {"nota": 42, "inicio": 0, "duracao": 80, "instrumento": "bateria"},
+        {"nota": 42, "inicio": 500, "duracao": 80, "instrumento": "bateria"},
+        {"nota": 42, "inicio": 1000, "duracao": 80, "instrumento": "bateria"},
+        {"nota": 42, "inicio": 1500, "duracao": 80, "instrumento": "bateria"}
+      ]
+    },
+  
+    "completo": {
+      "duracao_padrao": 2000,
+      "eventos": [
+        {"nota": 36, "inicio": 0, "duracao": 100, "instrumento": "bateria"},
+        {"nota": 42, "inicio": 0, "duracao": 80, "instrumento": "bateria"},
+        {"nota": 42, "inicio": 500, "duracao": 80, "instrumento": "bateria"},
+        {"nota": 38, "inicio": 1000, "duracao": 100, "instrumento": "bateria"},
+        {"nota": 42, "inicio": 1000, "duracao": 80, "instrumento": "bateria"},
+        {"nota": 42, "inicio": 1500, "duracao": 80, "instrumento": "bateria"}
+      ]
+    }
+  }

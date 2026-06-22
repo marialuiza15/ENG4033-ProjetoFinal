@@ -1,0 +1,22 @@
+{
+    "instrumento": "orgao",
+    "bpm": 120,
+    "estilo": "completo",
+    "sequencia": [
+        {
+            "nota": 60,
+            "inicio": 1000,
+            "duracao": 2000
+        },
+        {
+            "nota": 64,
+            "inicio": 1000,
+            "duracao": 2000
+        },
+        {
+            "nota": 67,
+            "inicio": 4000,
+            "duracao": 2000
+        }
+    ]
+}
