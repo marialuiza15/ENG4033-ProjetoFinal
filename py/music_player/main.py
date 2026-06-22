@@ -1,8 +1,8 @@
 import os
-import time
 import json
 from pathlib import Path
-
+import time
+import sys
 
 
 FLUIDSYNTH_BIN = r"C:\Users\micro1\Downloads\fluidsynth\fluidsynth-v2.5.5-win10-x64-cpp11\bin"
@@ -11,8 +11,13 @@ os.add_dll_directory(FLUIDSYNTH_BIN)
 os.environ["PATH"] = FLUIDSYNTH_BIN + os.pathsep + os.environ["PATH"]
 
 
-PASTA_ATUAL = Path(__file__).parent
-PASTA_ARQUIVOS = PASTA_ATUAL / "arquivos_musicais"
+PASTA_ATUAL = Path(__file__).resolve().parent
+PASTA_PY = PASTA_ATUAL.parent
+PASTA_IA = PASTA_PY / "ia"
+
+sys.path.insert(0, str(PASTA_IA))
+
+from audioLeitura import gerar_sequencia_musical
 
 
 def carregar_json(caminho):
@@ -23,6 +28,8 @@ def salvar_json(caminho, dados):
     with open(caminho, "w", encoding="utf-8") as arquivo:
         json.dump(dados, arquivo, indent=4, ensure_ascii=False)
 
+        
+PASTA_ARQUIVOS = PASTA_ATUAL / "arquivos_musicais"
 
 batidas = carregar_json(PASTA_ARQUIVOS / "batidas.json")
 notas = carregar_json(PASTA_ARQUIVOS / "notas.json")
@@ -37,6 +44,12 @@ musica_completa = {
 }
 
 salvar_json(PASTA_ARQUIVOS / "musica_completa.json", musica_completa)
+
+json_entrada = carregar_json(PASTA_ARQUIVOS / "musica_completa.json")
+
+json_recebido = gerar_sequencia_musical(json_entrada)
+
+salvar_json(PASTA_ARQUIVOS / "musica_gerada.json", json_recebido)
 
 SOUNDFONT = r"C:\Users\micro1\Downloads\FluidR3_GM.sf2"
 import fluidsynth
