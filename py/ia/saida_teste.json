@@ -1,0 +1,47 @@
+{
+    "sequencia": [
+        {
+            "nota": "DO",
+            "inicio": 0,
+            "duracao": 250
+        },
+        {
+            "nota": "RE",
+            "inicio": 250,
+            "duracao": 250
+        },
+        {
+            "nota": "MI",
+            "inicio": 500,
+            "duracao": 300
+        },
+        {
+            "nota": "FA",
+            "inicio": 1000,
+            "duracao": 150
+        },
+        {
+            "nota": "SOL",
+            "inicio": 1250,
+            "duracao": 200
+        },
+        {
+            "nota": "LA",
+            "inicio": 1450,
+            "duracao": 300
+        },
+        {
+            "nota": "SOL",
+            "inicio": 1800,
+            "duracao": 200
+        },
+        {
+            "nota": "FA",
+            "inicio": 2200,
+            "duracao": 600
+        }
+    ],
+    "instrumento": "piano",
+    "bpm": 120,
+    "estilo": "rock"
+}

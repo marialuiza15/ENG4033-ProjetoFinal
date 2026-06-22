@@ -11,7 +11,8 @@ MODEL = "google/genma-4-e4b"
 # Prompt para a LLM gerar a nova sequencia musical
 PROMPT_LLM = """
 Crie uma nova sequencia musical baseada na sequencia de notas e duracoes
-informada. Essa sequencia é a melodia de uma musica que deve ser seguida 
+informada para melhorar a qualidade da sequencia original. Essa sequencia 
+é a melodia de uma musica que deve ser seguida 
 como base. Para a sequencia que deve ser gerada, siga também o estilo musical 
 informado e o bpm em que essa sequencia deve ser tocada no instrumento informado.
 
