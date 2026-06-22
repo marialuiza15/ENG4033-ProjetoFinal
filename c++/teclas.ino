@@ -54,7 +54,7 @@ void marca_nota(int nota){
 void tecla_pressed(int i){
     leds[i] = CRGB(255, 0, 0);
     FastLED.show();
-    Serial.println("Nota: " + notas[i]);
+    Serial.println("{\"nota\": \""+ notas[i] + "\", \"ativa\": true}");
     if (estado_gravacao) {
         pausas[total_de_notas] = millis() - tempo_ultimo_release;
         tempo_inicio = millis();
@@ -65,6 +65,7 @@ void tecla_pressed(int i){
 void tecla_released(int i){
     leds[i] = CRGB(0, 0, 0);
     FastLED.show();
+    Serial.println("{\"nota\": \""+ notas[i] + "\", \"ativa\": false}");
     if (estado_gravacao) {
         tempos[total_de_notas - 1] = millis() - tempo_inicio;
         tempo_ultimo_release = millis();
@@ -91,11 +92,24 @@ void whenPressedPlayPause() {
     estado_play_pause = !estado_play_pause;
     leds[7] = estado_play_pause ? CRGB(255, 0, 0) : CRGB(0, 0, 0);
     FastLED.show();
-    Serial.println("Play/Pause: " + String(estado_play_pause ? "ATIVO" : "INATIVO"));
     if (estado_play_pause){
+        // enviando pela serial formato JSON
+        Serial.print("{\"notas\":[");
+        for (int i = 0; i < total_de_notas; i++) {
+            Serial.print("{\"nota\":\"");
+            Serial.print(notas[gravacao[i]]);
+            Serial.print("\",\"inicio\":");
+            Serial.print(pausas[i]);
+            Serial.print(",\"duracao\":");
+            Serial.print(tempos[i]);
+            Serial.print("}");
+            if (i < total_de_notas - 1) Serial.print(",");
+        }
+        Serial.println("]}");
+
+        // replay das notas gravadas por led
         for (int i = 0; i < total_de_notas; i++) {
             delay(pausas[i]);
-            Serial.println(notas[gravacao[i]] + ": " + tempos[i]);
             leds[gravacao[i]] = CRGB(0, 0, 255);
             FastLED.show();
             delay(tempos[i]);
@@ -113,7 +127,6 @@ void whenPressedGravacao() {
     estado_gravacao = !estado_gravacao;
     leds[8] = estado_gravacao ? CRGB(255, 0, 0) : CRGB(0, 0, 0);
     FastLED.show();
-    Serial.println("Gravacao: " + String(estado_gravacao ? "ATIVA" : "INATIVA"));
 }
 
 void setup() {
