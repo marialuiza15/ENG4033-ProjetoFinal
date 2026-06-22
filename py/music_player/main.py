@@ -108,10 +108,7 @@ def preparar_batida(batida, bpm):
         novo_evento["duracao"] = ajustar_tempo_batida(evento["duracao"], bpm)
         eventos.append(novo_evento)
 
-    duracao_padrao = ajustar_tempo_batida(
-        batida["duracao_padrao"],
-        bpm
-    )
+    duracao_padrao = ajustar_tempo_batida(batida["duracao_padrao"],bpm)
 
     return eventos, duracao_padrao
 
