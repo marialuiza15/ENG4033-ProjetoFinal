@@ -131,10 +131,11 @@ def tocar_musica():
     batidas = carregar_json(PASTA_ARQUIVOS / "batidas.json")
 
     json_entrada = carregar_json(PASTA_ARQUIVOS / "musica_completa.json")
-    json_recebido = gerar_sequencia_musical(json_entrada)
-    salvar_json(PASTA_ARQUIVOS / "musica_gerada.json", json_recebido)
+    #json_recebido = gerar_sequencia_musical(json_entrada)
+    #salvar_json(PASTA_ARQUIVOS / "musica_gerada.json", json_recebido)
 
-    musica_completa = json_recebido
+    #musica_completa = json_recebido
+    musica_completa = json_entrada
     sequencia = preparar_sequencia(musica_completa)
 
     seq = fluidsynth.Sequencer(use_system_timer=False)
@@ -188,12 +189,10 @@ def main():
 
                 if "notas" in dados:
                     sequencia = []
-                    inicio_acumulado = 0
                     for n in dados["notas"]:
                         midi = notas_map.get(n["nota"])
                         if midi:
-                            sequencia.append({"nota": midi, "inicio": inicio_acumulado, "duracao": n["duracao"]})
-                            inicio_acumulado += n["inicio"] + n["duracao"]
+                            sequencia.append({"nota": midi, "inicio": n["inicio"], "duracao": n["duracao"]})
                     salvar_json(PASTA_ARQUIVOS / "notas.json", {"sequencia": sequencia})
                     print(f"[SEQUENCIA] {len(sequencia)} nota(s) salvas em notas.json")
 

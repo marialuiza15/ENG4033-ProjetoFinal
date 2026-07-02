@@ -4,8 +4,8 @@
 #include <GFButton.h>
 
 #define ENC_CLK 2
-#define ENC_DT  3
-#define ENC_SW  4
+#define ENC_DT 3
+#define ENC_SW 4
 
 #define NUM_LEDS 12
 #define DATA_PIN 7
@@ -22,6 +22,7 @@ byte charSeta[8] = {
   0b00000, 
   0b00000
 };
+
 byte charCheck[8] = {
   0b00000, 
   0b00001, 
@@ -50,7 +51,7 @@ const int NUM_INSTRUMENTOS = 5;
 const char* listaInstrumentos[NUM_INSTRUMENTOS] = {
   "Orgao", "Flauta", "Guitarra", "Bateria", "Piano"
 };
-int instrumentoAtual  = 0;
+int instrumentoAtual = 0;
 int cursorInstrumento = 0;
 
 int valorBPM = 100;
@@ -59,11 +60,11 @@ const int NUM_ESTILOS = 4;
 const char* listaEstilos[NUM_ESTILOS] = {
   "Rock", "Jazz", "Samba", "Escolha da IA"
 };
-int estiloAtual  = 0;
+int estiloAtual = 0;
 int cursorEstilo = 0;
 
-int  ultimoEstadoCLK;
-bool botaoPressionado       = false;
+int ultimoEstadoCLK;
+bool botaoPressionado = false;
 unsigned long tempoUltimoBotao = 0;
 const unsigned long DEBOUNCE_MS = 250;
 bool telaModificada = true;
@@ -81,7 +82,7 @@ GFButton botao_play_pause(A11);
 GFButton botao_gravacao(A13);
 
 bool estado_play_pause = false;
-bool estado_gravacao   = false;
+bool estado_gravacao = false;
 
 String notas[] = {"DO", "RE", "MI", "FA", "SOL", "LA", "SI"};
 
@@ -90,8 +91,10 @@ int total_de_notas = 0;
 
 unsigned long tempos[300];
 unsigned long pausas[300];
-unsigned long tempo_inicio        = 0;
+unsigned long tempo_inicio[7] = {0, 0, 0, 0, 0, 0, 0};
 unsigned long tempo_ultimo_release = 0;
+unsigned long tempo_inicio_gravacao = 0;
+int posicao_nota[7] = {-1, -1, -1, -1, -1, -1, -1};
 
 CRGB leds[NUM_LEDS];
 
@@ -101,6 +104,7 @@ CRGB leds[NUM_LEDS];
 void marca_nota(int nota) {
   if (estado_gravacao && total_de_notas < 300) {
     gravacao[total_de_notas] = nota;
+    posicao_nota[nota] = total_de_notas;
     total_de_notas++;
   }
 }
@@ -110,8 +114,8 @@ void tecla_pressed(int i) {
   FastLED.show();
   Serial.println("{\"nota\": \"" + notas[i] + "\", \"ativa\": true}");
   if (estado_gravacao) {
-    pausas[total_de_notas] = millis() - tempo_ultimo_release;
-    tempo_inicio = millis();
+    pausas[total_de_notas] = millis() - tempo_inicio_gravacao;
+    tempo_inicio[i] = millis();
   }
   marca_nota(i);
 }
@@ -120,8 +124,9 @@ void tecla_released(int i) {
   leds[i] = CRGB(0, 0, 0);
   FastLED.show();
   Serial.println("{\"nota\": \"" + notas[i] + "\", \"ativa\": false}");
-  if (estado_gravacao) {
-    tempos[total_de_notas - 1] = millis() - tempo_inicio;
+  if (estado_gravacao && posicao_nota[i] >= 0) {
+    tempos[posicao_nota[i]] = millis() - tempo_inicio[i];
+    posicao_nota[i] = -1;
     tempo_ultimo_release = millis();
   }
 }
@@ -161,21 +166,35 @@ void whenPressedPlayPause() {
     }
     Serial.println("]}");
 
-    // ATENÇÃO: delay() aqui bloqueia encoder e LCD durante o replay
+    unsigned long duracao_total = 0;
     for (int i = 0; i < total_de_notas; i++) {
-      delay(pausas[i]);
-      leds[gravacao[i]] = CRGB(0, 0, 255);
-      FastLED.show();
-      delay(tempos[i]);
-      leds[gravacao[i]] = CRGB(0, 0, 0);
-      FastLED.show();
+      unsigned long fim = pausas[i] + tempos[i];
+      if (fim > duracao_total) duracao_total = fim;
     }
+
+    unsigned long inicio_replay = millis();
+    while (true) {
+      unsigned long t = millis() - inicio_replay;
+      if (t > duracao_total) break;
+      for (int i = 0; i < total_de_notas; i++) {
+        if (t >= pausas[i] && t < pausas[i] + tempos[i]) {
+          leds[gravacao[i]] = CRGB(0, 0, 255);
+        } else {
+          leds[gravacao[i]] = CRGB(0, 0, 0);
+        }
+      }
+      FastLED.show();
+      delay(10);
+    }
+    FastLED.clear();
+    FastLED.show();
   }
 }
 
 void whenPressedGravacao() {
   if (!estado_gravacao) {
     total_de_notas = 0;
+    tempo_inicio_gravacao = millis();
     tempo_ultimo_release = millis();
   }
   estado_gravacao = !estado_gravacao;
@@ -225,13 +244,13 @@ void lerEncoder() {
 void lerBotao() {
   bool leitura = (digitalRead(ENC_SW) == LOW);
   if (leitura && !botaoPressionado && (millis() - tempoUltimoBotao > DEBOUNCE_MS)) {
-    botaoPressionado  = true;
-    tempoUltimoBotao  = millis();
+    botaoPressionado = true;
+    tempoUltimoBotao = millis();
 
     switch (estadoAtual) {
       case MENU_PRINCIPAL:
-        if      (cursorMenu == 0) { estadoAtual = EDITANDO_BPM; }
-        else if (cursorMenu == 1) { estadoAtual = EDITANDO_ESTILO;      cursorEstilo = estiloAtual; }
+        if (cursorMenu == 0) { estadoAtual = EDITANDO_BPM; }
+        else if (cursorMenu == 1) { estadoAtual = EDITANDO_ESTILO; cursorEstilo = estiloAtual; }
         else if (cursorMenu == 2) { estadoAtual = EDITANDO_INSTRUMENTO; cursorInstrumento = instrumentoAtual; }
         break;
       case EDITANDO_INSTRUMENTO:
@@ -287,18 +306,32 @@ void desenharSeletorInstrumento() {
     if (idx >= NUM_INSTRUMENTOS) break;
     int linha = v + 1;
     lcd.setCursor(0, linha);
-    if (idx == cursorInstrumento) { lcd.print(" "); lcd.write(byte(0)); lcd.print(" "); }
-    else lcd.print("   ");
+    if (idx == cursorInstrumento) {
+      lcd.print(" ");
+      lcd.write(byte(0));
+      lcd.print(" ");
+    } else {
+      lcd.print("   ");
+    }
     lcd.print(listaInstrumentos[idx]);
-    if (idx == instrumentoAtual) { lcd.setCursor(18, linha); lcd.write(byte(1)); }
+    if (idx == instrumentoAtual) {
+      lcd.setCursor(18, linha);
+      lcd.write(byte(1));
+    }
   }
 }
 
 void desenharEditorBPM() {
-  lcd.setCursor(0, 0); lcd.print("-> BPM");
-  lcd.setCursor(2, 1); lcd.print("Velocidade: ["); lcd.print(valorBPM); lcd.print("]");
-  lcd.setCursor(0, 2); lcd.print("Gire para alterar");
-  lcd.setCursor(0, 3); lcd.print("Clique para salvar");
+  lcd.setCursor(0, 0);
+  lcd.print("-> BPM");
+  lcd.setCursor(2, 1);
+  lcd.print("Velocidade: [");
+  lcd.print(valorBPM);
+  lcd.print("]");
+  lcd.setCursor(0, 2);
+  lcd.print("Gire para alterar");
+  lcd.setCursor(0, 3);
+  lcd.print("Clique para salvar");
 }
 
 void desenharSeletorEstilo() {
@@ -310,20 +343,28 @@ void desenharSeletorEstilo() {
     if (idx >= NUM_ESTILOS) break;
     int linha = v + 1;
     lcd.setCursor(0, linha);
-    if (idx == cursorEstilo) { lcd.print(" "); lcd.write(byte(0)); lcd.print(" "); }
-    else lcd.print("   ");
+    if (idx == cursorEstilo) {
+      lcd.print(" ");
+      lcd.write(byte(0));
+      lcd.print(" ");
+    } else {
+      lcd.print("   ");
+    }
     lcd.print(listaEstilos[idx]);
-    if (idx == estiloAtual) { lcd.setCursor(18, linha); lcd.write(byte(1)); }
+    if (idx == estiloAtual) {
+      lcd.setCursor(18, linha);
+      lcd.write(byte(1));
+    }
   }
 }
 
 void desenharTela() {
   lcd.clear();
   switch (estadoAtual) {
-    case MENU_PRINCIPAL:       desenharMenuPrincipal();      break;
+    case MENU_PRINCIPAL: desenharMenuPrincipal(); break;
     case EDITANDO_INSTRUMENTO: desenharSeletorInstrumento(); break;
-    case EDITANDO_BPM:         desenharEditorBPM();          break;
-    case EDITANDO_ESTILO:      desenharSeletorEstilo();      break;
+    case EDITANDO_BPM: desenharEditorBPM(); break;
+    case EDITANDO_ESTILO: desenharSeletorEstilo(); break;
   }
 }
 
@@ -355,13 +396,20 @@ void setup() {
   FastLED.show();
 
   // Teclas
-  tecla1.setPressHandler(whenPressed1);   tecla1.setReleaseHandler(whenReleased1);
-  tecla2.setPressHandler(whenPressed2);   tecla2.setReleaseHandler(whenReleased2);
-  tecla3.setPressHandler(whenPressed3);   tecla3.setReleaseHandler(whenReleased3);
-  tecla4.setPressHandler(whenPressed4);   tecla4.setReleaseHandler(whenReleased4);
-  tecla5.setPressHandler(whenPressed5);   tecla5.setReleaseHandler(whenReleased5);
-  tecla6.setPressHandler(whenPressed6);   tecla6.setReleaseHandler(whenReleased6);
-  tecla7.setPressHandler(whenPressed7);   tecla7.setReleaseHandler(whenReleased7);
+  tecla1.setPressHandler(whenPressed1);
+  tecla1.setReleaseHandler(whenReleased1);
+  tecla2.setPressHandler(whenPressed2);
+  tecla2.setReleaseHandler(whenReleased2);
+  tecla3.setPressHandler(whenPressed3);
+  tecla3.setReleaseHandler(whenReleased3);
+  tecla4.setPressHandler(whenPressed4);
+  tecla4.setReleaseHandler(whenReleased4);
+  tecla5.setPressHandler(whenPressed5);
+  tecla5.setReleaseHandler(whenReleased5);
+  tecla6.setPressHandler(whenPressed6);
+  tecla6.setReleaseHandler(whenReleased6);
+  tecla7.setPressHandler(whenPressed7);
+  tecla7.setReleaseHandler(whenReleased7);
 
   botao_play_pause.setPressHandler(whenPressedPlayPause);
   botao_gravacao.setPressHandler(whenPressedGravacao);
