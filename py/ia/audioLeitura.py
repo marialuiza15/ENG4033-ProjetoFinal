@@ -1,7 +1,6 @@
 import json
 from typing import Any
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from requests import post
 
 
 # Dados da LLM local
@@ -11,10 +10,9 @@ MODEL = "google/genma-4-e4b"
 # Prompt para a LLM gerar a nova sequencia musical
 PROMPT_LLM = """
 Crie uma nova sequencia musical baseada na sequencia de notas e duracoes
-informada para melhorar a qualidade da sequencia original. Essa sequencia 
-é a melodia de uma musica que deve ser seguida 
-como base. Para a sequencia que deve ser gerada, siga também o estilo musical 
-informado e o bpm em que essa sequencia deve ser tocada no instrumento informado.
+informada para melhorar a qualidade da sequencia original de forma a deixa-la mais melodiosa. 
+Essa sequencia e a melodia de uma musica que deve ser seguida como base para a sequencia que deve ser gerada.
+Siga tambem o estilo musical informado e o bpm em que essa sequencia deve ser tocada no instrumento informado.
 
 A resposta deve ser somente um JSON valido, sem markdown, com o seguinte formato:
 {
@@ -26,18 +24,20 @@ A resposta deve ser somente um JSON valido, sem markdown, com o seguinte formato
     "estilo": "ee"
 }
 
-onde "nota" é uma nota musical (ex: DO, RE, MI, FA, SOL, LA, SI), "inicio" é o
-tempo de inicio da nota em milissegundos, "duracao" é a duracao da nota em milissegundos, 
-"instrumento" é uma string com o instrumento utilizados na musica (ex: piano, baixo, bateria), 
-"bpm" é o tempo da musica em batidas por minuto e "estilo" é o estilo musical da musica (ex: rock, pop, jazz).
+onde "nota" e uma nota musical (ex: DO, RE, MI, FA, SOL, LA, SI), "inicio" e o
+tempo de inicio da nota em milissegundos, "duracao" e a duracao da nota em milissegundos, 
+"instrumento" e uma string com o instrumento utilizados na musica (ex: piano, baixo, bateria), 
+"bpm" e o tempo da musica em batidas por minuto e "estilo" e o estilo musical da musica (ex: rock, pop, jazz).
 Caso o estilo informado seja FALSE, a musica deve ser gerada sem seguir um estilo musical especifico.
+No json que vai ser retornado, a nota deve estar no formato de valor utilizado pelo Fluidsynth que vai tocar a musica (Ex: 64, 66, 67).
+JSON de entrada com a sequencia e parametros a serem usados como base:
 """
 
+
 def gerar_sequencia_musical(json_entrada: dict[str, Any]) -> dict[str, Any]:
-    url = f"{BASE_URL.rstrip('/')}/chat/completions"
+    url = BASE_URL + "/chat/completions"
     conteudo = (
         f"{PROMPT_LLM}\n\n"
-        "JSON de entrada com a sequencia e parametros a serem usados como base:\n"
         f"{json.dumps(json_entrada, ensure_ascii=False)}"
     )
     payload = {
@@ -45,21 +45,8 @@ def gerar_sequencia_musical(json_entrada: dict[str, Any]) -> dict[str, Any]:
         "messages": [{"role": "user", "content": conteudo}],
     }
 
-    request = Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
-    try:
-        with urlopen(request) as response:
-            dados = json.loads(response.read().decode("utf-8"))
-    except HTTPError as exc:
-        corpo = exc.read().decode("utf-8", errors="replace")
-        raise Exception(f"Erro HTTP da LLM ({exc.code}): {corpo}") from exc
-    except URLError as exc:
-        raise Exception(f"Nao foi possivel conectar na LLM local: {exc}") from exc
+    resposta = post(url, json=payload)
+    dados = resposta.json()
 
     try:
         resposta = dados["choices"][0]["message"]["content"].strip()
