@@ -2,26 +2,5 @@
     "instrumento": "orgao",
     "bpm": 100,
     "estilo": "rock",
-    "sequencia": [
-        {
-            "nota": 60,
-            "inicio": 2018,
-            "duracao": 810
-        },
-        {
-            "nota": 62,
-            "inicio": 2021,
-            "duracao": 838
-        },
-        {
-            "nota": 67,
-            "inicio": 4394,
-            "duracao": 792
-        },
-        {
-            "nota": 65,
-            "inicio": 4397,
-            "duracao": 740
-        }
-    ]
+    "sequencia": []
 }

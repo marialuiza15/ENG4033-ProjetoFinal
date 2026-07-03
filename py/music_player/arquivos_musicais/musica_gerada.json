@@ -1,0 +1,47 @@
+{
+    "instrumento": "orgao",
+    "bpm": 100,
+    "estilo": "rock",
+    "sequencia": [
+        {
+            "nota": 65,
+            "inicio": 447,
+            "duracao": 167
+        },
+        {
+            "nota": 62,
+            "inicio": 1575,
+            "duracao": 215
+        },
+        {
+            "nota": 69,
+            "inicio": 1860,
+            "duracao": 190
+        },
+        {
+            "nota": 60,
+            "inicio": 2219,
+            "duracao": 171
+        },
+        {
+            "nota": 71,
+            "inicio": 2542,
+            "duracao": 175
+        },
+        {
+            "nota": 64,
+            "inicio": 9525,
+            "duracao": 158
+        },
+        {
+            "nota": 64,
+            "inicio": 9858,
+            "duracao": 73
+        },
+        {
+            "nota": 64,
+            "inicio": 10410,
+            "duracao": 126
+        }
+    ]
+}

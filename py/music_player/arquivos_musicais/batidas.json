@@ -9,7 +9,7 @@
       ]
     },
   
-    "simples": {
+    "Samba": {
       "duracao_padrao": 2000,
       "eventos": [
         {"nota": 36, "inicio": 0, "duracao": 100, "instrumento": "bateria"},
@@ -17,7 +17,7 @@
       ]
     },
   
-    "hihat": {
+    "Jazz": {
       "duracao_padrao": 2000,
       "eventos": [
         {"nota": 42, "inicio": 0, "duracao": 80, "instrumento": "bateria"},
