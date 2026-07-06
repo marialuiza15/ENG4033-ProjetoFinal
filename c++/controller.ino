@@ -183,10 +183,11 @@ void whenPressedPlayPause() {
   while (millis() - ref <= duracao_total) {
     unsigned long t = millis() - ref;
     for (int i = 0; i < total_de_notas; i++) {
-      if (t >= pausas[i] && t < pausas[i] + tempos[i]) {
+      leds[gravacao[i]] = CRGB(0, 0, 0);
+    }
+    for (int i = 0; i < total_de_notas; i++) {
+      if (t >= pausas[i] && t < pausas[i] + tempos[i]) { 
         leds[gravacao[i]] = CRGB(0, 0, 255);
-      } else {
-        leds[gravacao[i]] = CRGB(0, 0, 0);
       }
     }
     FastLED.show();
