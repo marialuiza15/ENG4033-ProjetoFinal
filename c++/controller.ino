@@ -15,7 +15,7 @@
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
-RotaryEncoder encoder(20, 21);
+RotaryEncoder encoder(ENC_CLK, ENC_DT);
 
 void tickDoEncoder() {
   encoder.tick();
@@ -327,6 +327,13 @@ void setup() {
   pinMode(ENC_CLK, INPUT_PULLUP);
   pinMode(ENC_DT,  INPUT_PULLUP);
   pinMode(ENC_SW,  INPUT_PULLUP);
+
+  pinMode(ENC_CLK, INPUT_PULLUP);
+  pinMode(ENC_DT,  INPUT_PULLUP);
+  pinMode(ENC_SW,  INPUT_PULLUP);
+  
+  attachInterrupt(digitalPinToInterrupt(ENC_CLK), tickDoEncoder, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENC_DT),  tickDoEncoder, CHANGE);
 
   //configuração da fita led
   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS);
