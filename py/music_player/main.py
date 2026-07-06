@@ -84,14 +84,11 @@ notas_map = {
 
 
 INSTRUMENTOS = {
-    "piano": {"canal": 0, "programa": 0},
-    "baixo": {"canal": 1, "programa": 33},
-    "guitarra": {"canal": 2, "programa": 27},
-    "sintetizador": {"canal": 3, "programa": 89},
-    "orgao": {"canal": 4, "programa": 19},
-    "strings": {"canal": 5, "programa": 48},
-    "flauta": {"canal": 6, "programa": 73},
-    "bateria": {"canal": 9, "programa": 0},
+    "Piano": {"canal": 0, "programa": 0},
+    "Guitarra": {"canal": 2, "programa": 27},
+    "Orgao": {"canal": 4, "programa": 19},
+    "Flauta": {"canal": 6, "programa": 73},
+    "Bateria": {"canal": 9, "programa": 0},
 }
 
 

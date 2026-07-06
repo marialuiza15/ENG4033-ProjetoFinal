@@ -1,5 +1,5 @@
 {
-    "rock": {
+    "Rock": {
       "duracao_padrao": 2000,
       "eventos": [
         {"nota": 36, "inicio": 0, "duracao": 100, "instrumento": "bateria"},
@@ -27,7 +27,7 @@
       ]
     },
   
-    "completo": {
+    "Opcao IA": {
       "duracao_padrao": 2000,
       "eventos": [
         {"nota": 36, "inicio": 0, "duracao": 100, "instrumento": "bateria"},
