@@ -26,13 +26,13 @@ byte charSeta[8] = {
 };
 
 GFButton teclas[] = {
-  GFButton(A8), //azul
-  GFButton(A15), //amarelo
-  GFButton(A0), //preto
-  GFButton(A2), //azul
-  GFButton(A3), //preto
-  GFButton(A4),  //amarelo
-  GFButton(A5) //azul
+  GFButton(A15), //azul - DO
+  GFButton(A8), //amarelo - RE
+  GFButton(A7), //preto - MI
+  GFButton(A6), //azul - FA
+  GFButton(A3), //preto - SOL
+  GFButton(A2),  //amarelo - LA
+  GFButton(A0) //azul - SI
 };
 
 // Botões de controle
