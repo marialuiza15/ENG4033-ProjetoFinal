@@ -15,7 +15,7 @@
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
-RotaryEncoder encoder(20, 21);
+RotaryEncoder encoder(ENC_CLK, ENC_DT);
 
 void tickDoEncoder() {
   encoder.tick();
@@ -74,9 +74,7 @@ const int NUM_INSTRUMENTOS = 5;
 const char* listaInstrumentos[NUM_INSTRUMENTOS] = {"Orgao", "Flauta", "Guitarra", "Bateria", "Piano"};
 int instrumentoAtual = 0; //default orgao
 
-volatile int encoderDelta = 0; // a marcação volatile indica ser uma variavel 
-// de mudança constante, o sistema guarda essa avriavel em um registardor especial
-
+int posicaoAnterior = 0;
 
 bool botaoPressionado = false;
 bool telaModificada = true;
@@ -223,16 +221,6 @@ void whenPressedGravacao() {
 
 }
 
-
-void ISR_encoder() {
-  if (digitalRead(ENC_DT) == HIGH) {
-    encoderDelta++;
-  } else {
-    encoderDelta--;
-  }
-}
-
-
 void processarEncoder() {
   int posicao = encoder.getPosition();
   int delta = posicao - posicaoAnterior;
@@ -265,7 +253,20 @@ void processarEncoder() {
   telaModificada = true;
 }
 
+void lerBotao() {
+  bool leitura = (digitalRead(ENC_SW) == LOW);
+  if (leitura && !botaoPressionado && (millis() - tempoUltimoBotao > DEBOUNCE_MS)) {
+    botaoPressionado = true;
+    tempoUltimoBotao = millis();
 
+    estadoAtual = (estadoAtual == NAVEGANDO) ? EDITANDO : NAVEGANDO;
+    if (estadoAtual == NAVEGANDO) {
+      imprimirEstadoSerial(); 
+    }
+    telaModificada = true;
+  }
+  if (!leitura) botaoPressionado = false;
+}
 
 void desenharMenu() {
   lcd.clear();
@@ -326,7 +327,13 @@ void setup() {
   pinMode(ENC_CLK, INPUT_PULLUP);
   pinMode(ENC_DT,  INPUT_PULLUP);
   pinMode(ENC_SW,  INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ENC_CLK), ISR_encoder, FALLING);
+
+  pinMode(ENC_CLK, INPUT_PULLUP);
+  pinMode(ENC_DT,  INPUT_PULLUP);
+  pinMode(ENC_SW,  INPUT_PULLUP);
+  
+  attachInterrupt(digitalPinToInterrupt(ENC_CLK), tickDoEncoder, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENC_DT),  tickDoEncoder, CHANGE);
 
   //configuração da fita led
   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS);
