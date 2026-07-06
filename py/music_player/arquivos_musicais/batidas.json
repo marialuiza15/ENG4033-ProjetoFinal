@@ -1,41 +1,103 @@
 {
     "Rock": {
-      "duracao_padrao": 2000,
-      "eventos": [
-        {"nota": 36, "inicio": 0, "duracao": 100, "instrumento": "Bateria"},
-        {"nota": 38, "inicio": 500, "duracao": 100, "instrumento": "Bateria"},
-        {"nota": 36, "inicio": 1000, "duracao": 100, "instrumento": "Bateria"},
-        {"nota": 38, "inicio": 1500, "duracao": 100, "instrumento": "Bateria"}
-      ]
+        "duracao_padrao": 4000,
+        "eventos": [
+            {"nota": 49, "inicio": 0, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 0, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 0, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 500, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 38, "inicio": 1000, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 1000, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 1500, "duracao": 100, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 1500, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 2000, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 2000, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 2500, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 38, "inicio": 3000, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 3000, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 3500, "duracao": 100, "instrumento": "Bateria"},
+            {"nota": 46, "inicio": 3500, "duracao": 140, "instrumento": "Bateria"}
+        ]
     },
-  
+
     "Samba": {
-      "duracao_padrao": 2000,
-      "eventos": [
-        {"nota": 36, "inicio": 0, "duracao": 100, "instrumento": "Bateria"},
-        {"nota": 36, "inicio": 1000, "duracao": 100, "instrumento": "Bateria"}
-      ]
+        "duracao_padrao": 4000,
+        "eventos": [
+            {"nota": 36, "inicio": 0, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 0, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 250, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 37, "inicio": 500, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 500, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 750, "duracao": 90, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 750, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 37, "inicio": 1000, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 1000, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 1250, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 1500, "duracao": 100, "instrumento": "Bateria"},
+            {"nota": 37, "inicio": 1500, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 1500, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 46, "inicio": 1750, "duracao": 100, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 2000, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 2000, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 2250, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 37, "inicio": 2500, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 2500, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 2750, "duracao": 90, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 2750, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 37, "inicio": 3000, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 3000, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 3250, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 3500, "duracao": 100, "instrumento": "Bateria"},
+            {"nota": 37, "inicio": 3500, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 3500, "duracao": 50, "instrumento": "Bateria"},
+            {"nota": 46, "inicio": 3750, "duracao": 100, "instrumento": "Bateria"}
+        ]
     },
-  
+
     "Jazz": {
-      "duracao_padrao": 2000,
-      "eventos": [
-        {"nota": 42, "inicio": 0, "duracao": 80, "instrumento": "Bateria"},
-        {"nota": 42, "inicio": 500, "duracao": 80, "instrumento": "Bateria"},
-        {"nota": 42, "inicio": 1000, "duracao": 80, "instrumento": "Bateria"},
-        {"nota": 42, "inicio": 1500, "duracao": 80, "instrumento": "Bateria"}
-      ]
+        "duracao_padrao": 4000,
+        "eventos": [
+            {"nota": 51, "inicio": 0, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 0, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 51, "inicio": 667, "duracao": 90, "instrumento": "Bateria"},
+            {"nota": 51, "inicio": 1000, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 44, "inicio": 1000, "duracao": 80, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 1000, "duracao": 60, "instrumento": "Bateria"},
+            {"nota": 38, "inicio": 1500, "duracao": 80, "instrumento": "Bateria"},
+            {"nota": 51, "inicio": 1667, "duracao": 90, "instrumento": "Bateria"},
+            {"nota": 51, "inicio": 2000, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 2000, "duracao": 70, "instrumento": "Bateria"},
+            {"nota": 38, "inicio": 2500, "duracao": 80, "instrumento": "Bateria"},
+            {"nota": 51, "inicio": 2667, "duracao": 90, "instrumento": "Bateria"},
+            {"nota": 51, "inicio": 3000, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 44, "inicio": 3000, "duracao": 80, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 3000, "duracao": 60, "instrumento": "Bateria"},
+            {"nota": 38, "inicio": 3500, "duracao": 80, "instrumento": "Bateria"},
+            {"nota": 51, "inicio": 3667, "duracao": 90, "instrumento": "Bateria"}
+        ]
     },
-  
+
     "Opcao IA": {
-      "duracao_padrao": 2000,
-      "eventos": [
-        {"nota": 36, "inicio": 0, "duracao": 100, "instrumento": "Bateria"},
-        {"nota": 42, "inicio": 0, "duracao": 80, "instrumento": "Bateria"},
-        {"nota": 42, "inicio": 500, "duracao": 80, "instrumento": "Bateria"},
-        {"nota": 38, "inicio": 1000, "duracao": 100, "instrumento": "Bateria"},
-        {"nota": 42, "inicio": 1000, "duracao": 80, "instrumento": "Bateria"},
-        {"nota": 42, "inicio": 1500, "duracao": 80, "instrumento": "Bateria"}
-      ]
+        "duracao_padrao": 4000,
+        "eventos": [
+            {"nota": 49, "inicio": 0, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 0, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 0, "duracao": 60, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 500, "duracao": 60, "instrumento": "Bateria"},
+            {"nota": 39, "inicio": 750, "duracao": 80, "instrumento": "Bateria"},
+            {"nota": 38, "inicio": 1000, "duracao": 110, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 1000, "duracao": 60, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 1500, "duracao": 90, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 1500, "duracao": 60, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 2000, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 2000, "duracao": 60, "instrumento": "Bateria"},
+            {"nota": 39, "inicio": 2500, "duracao": 80, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 2500, "duracao": 60, "instrumento": "Bateria"},
+            {"nota": 38, "inicio": 3000, "duracao": 110, "instrumento": "Bateria"},
+            {"nota": 42, "inicio": 3000, "duracao": 60, "instrumento": "Bateria"},
+            {"nota": 36, "inicio": 3250, "duracao": 80, "instrumento": "Bateria"},
+            {"nota": 46, "inicio": 3500, "duracao": 120, "instrumento": "Bateria"},
+            {"nota": 45, "inicio": 3750, "duracao": 90, "instrumento": "Bateria"}
+        ]
     }
-  }
+}

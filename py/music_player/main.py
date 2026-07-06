@@ -65,7 +65,7 @@ import fluidsynth
 
 sys.path.insert(0, str(PASTA_PY))
 
-from ia.audioLeitura import gerar_sequencia_musical
+from ia.audioLeitura import gerar_sequencia_musical, gerar_sequencia_musical_gemini
 
 
 # =========================
@@ -84,11 +84,11 @@ notas_map = {
 
 
 INSTRUMENTOS = {
-    "Piano": {"canal": 0, "programa": 0},
-    "Guitarra": {"canal": 2, "programa": 27},
-    "Orgao": {"canal": 4, "programa": 19},
-    "Flauta": {"canal": 6, "programa": 73},
-    "Bateria": {"canal": 9, "programa": 0},
+    "Piano": {"canal": 0, "banco": 0, "programa": 0},
+    "Guitarra": {"canal": 2, "banco": 0, "programa": 27},
+    "Orgao": {"canal": 4, "banco": 0, "programa": 19},
+    "Flauta": {"canal": 6, "banco": 0, "programa": 73},
+    "Bateria": {"canal": 9, "banco": 128, "programa": 0},
 }
 
 
@@ -153,7 +153,7 @@ for instrumento in INSTRUMENTOS.values():
     fs.program_select(
         instrumento["canal"],
         sfid,
-        0,
+        instrumento["banco"],
         instrumento["programa"]
     )
 
@@ -416,7 +416,7 @@ def processar_sequencia(sequencia_notas_recebidas):
     #modifica a musica com a IA
     musica_ia=gerar_sequencia_musical(musica_completa)
     #para a batida antiga para comecar a batida da IA
-    parar_batida()
+    #parar_batida()
     #toca a musica em thread
     tocar_musica_em_thread(musica_ia)
 

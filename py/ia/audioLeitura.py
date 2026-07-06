@@ -5,7 +5,6 @@ from requests import post
 
 # Dados da LLM local
 BASE_URL = "http://localhost:1234/v1"
-MODEL = "google/genma-4-e4b"
 
 # Prompt para a LLM gerar a nova sequencia musical
 PROMPT_LLM = """
@@ -17,7 +16,7 @@ Siga tambem o estilo musical informado e o bpm em que essa sequencia deve ser to
 A resposta deve ser somente um JSON valido, sem markdown, com o seguinte formato:
 {
     "sequencia": [
-        {"nota": "xx", "inicio": y, "duracao": z}
+        {"nota": xx, "inicio": y, "duracao": z}
     ],
     "instrumento": "ii",
     "bpm": 120,
