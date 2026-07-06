@@ -241,9 +241,9 @@ void processarEncoder() {
       case 0: {  
         int deltaAbs = abs(delta);
         int mult = 1;
-        if (deltaAbs >= 5) mult = 5;      
+        if (deltaAbs >= 5) mult = 2;      
         else if (deltaAbs >= 3) mult = 2;  
-        valorBPM = constrain(valorBPM + delta * mult, 20, 300);
+        valorBPM = constrain(valorBPM + delta , 20, 300);
         break;
       }
       case 1:  
@@ -258,20 +258,9 @@ void processarEncoder() {
   telaModificada = true;
 }
 
-void lerBotao() {
-  bool leitura = (digitalRead(ENC_SW) == LOW);
-  if (leitura && !botaoPressionado && (millis() - tempoUltimoBotao > DEBOUNCE_MS)) {
-    botaoPressionado = true;
-    tempoUltimoBotao = millis();
 
-    estadoAtual = (estadoAtual == NAVEGANDO) ? EDITANDO : NAVEGANDO;
-    if (estadoAtual == NAVEGANDO) {
-      imprimirEstadoSerial(); 
-    }
-    telaModificada = true;
-  }
-  if (!leitura) botaoPressionado = false;
-}
+
+
 
 void desenharMenu() {
   lcd.clear();
