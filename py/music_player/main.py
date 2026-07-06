@@ -97,12 +97,12 @@ INSTRUMENTOS = {
 # =========================
 
 estado_musica = {
-    "instrumento": "orgao",
+    "instrumento": "Orgao",
     "bpm": 100,
-    "estilo": "rock",
+    "estilo": "Rock",
 }
 
-instrumento_atual = "orgao"
+instrumento_atual = "Orgao"
 
 estado_lock = threading.Lock()
 
@@ -211,7 +211,7 @@ def preparar_batida(batida, bpm):
         novo_evento["duracao"] = ajustar_tempo_batida(evento["duracao"], bpm)
 
         if "instrumento" not in novo_evento:
-            novo_evento["instrumento"] = "bateria"
+            novo_evento["instrumento"] = "Bateria"
 
         eventos.append(novo_evento)
 
@@ -325,8 +325,9 @@ def listar_portas():
         print(f"{porta.device} - {porta.description}")
 
 
-
+#pega o estado atual da musica e salva em um json com as configuracoes corretas
 def montar_musica_completa(sequencia):
+
     estado = snapshot_estado_musica()
 
     musica_completa = {
@@ -423,9 +424,9 @@ def testar_sem_arduino():
     print("\n[TESTE] Rodando sem Arduino...\n")
 
     dados_config = {
-        "instrumento": "orgao",
+        "instrumento": "Orgao",
         "bpm": 120,
-        "estilo": "rock"
+        "estilo": "Rock"
     }
 
     processar_configuracao(dados_config)
@@ -482,7 +483,7 @@ def main():
     
     ser = serial.Serial(porta, 9600, timeout=2)
     print(f"\nConectado em {porta}. Aguardando dados...\n")
-    
+    #momento em que esperamos a resposta do arduino nos mandando todo o conteudo, aqui significa que o programa do arduino ja fez sua parte e entregou o json 
     while True:
         linha = ser.readline().decode("utf-8").strip()
         if not linha:
