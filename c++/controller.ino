@@ -221,16 +221,6 @@ void whenPressedGravacao() {
 
 }
 
-
-void ISR_encoder() {
-  if (digitalRead(ENC_DT) == HIGH) {
-    encoderDelta++;
-  } else {
-    encoderDelta--;
-  }
-}
-
-
 void processarEncoder() {
   int posicao = encoder.getPosition();
   int delta = posicao - posicaoAnterior;
@@ -337,7 +327,6 @@ void setup() {
   pinMode(ENC_CLK, INPUT_PULLUP);
   pinMode(ENC_DT,  INPUT_PULLUP);
   pinMode(ENC_SW,  INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ENC_CLK), ISR_encoder, FALLING);
 
   //configuração da fita led
   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS);
