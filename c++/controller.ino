@@ -2,6 +2,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <FastLED.h> //pra fita de led
 #include <GFButton.h>
+#include <RotaryEncoder.h>
 
 // pinos do encoder
 #define ENC_CLK  2   
@@ -13,6 +14,12 @@
 #define MAX_NOTAS 300 //numero de notas maximo q vamos guardar na gravação
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
+
+RotaryEncoder encoder(20, 21);
+
+void tickDoEncoder() {
+  encoder.tick();
+}
 
 byte charSeta[8] = {
   0b00000, 
@@ -225,40 +232,38 @@ void ISR_encoder() {
   }
 }
 
+
 void processarEncoder() {
-  int delta;
-  noInterrupts();
-  delta = encoderDelta;
-  encoderDelta = 0;
-  interrupts();
+  int posicao = encoder.getPosition();
+  int delta = posicao - posicaoAnterior;
 
   if (delta == 0) return;
+
+  // "consome" o movimento resetando a posição
+  encoder.setPosition(0);
+  posicaoAnterior = 0;
 
   if (estadoAtual == NAVEGANDO) {
     cursorMenu = constrain(cursorMenu + delta, 0, NUM_ITENS - 1);
   } else {
     switch (cursorMenu) {
-      case 0: {  
+      case 0: {
         int deltaAbs = abs(delta);
-        int mult = 1;
-        if (deltaAbs >= 5) mult = 2;      
-        else if (deltaAbs >= 3) mult = 2;  
-        valorBPM = constrain(valorBPM + delta , 20, 300);
+        int mult = (deltaAbs >= 3) ? 2 : 1;
+        valorBPM = constrain(valorBPM + delta * mult, 20, 300);
+        imprimirEstadoSerial();
         break;
       }
-      case 1:  
+      case 1:
         estiloAtual = constrain(estiloAtual + delta, 0, NUM_ESTILOS - 1);
         break;
-      case 2:  
+      case 2:
         instrumentoAtual = constrain(instrumentoAtual + delta, 0, NUM_INSTRUMENTOS - 1);
         break;
     }
-    if (cursorMenu == 0) imprimirEstadoSerial();
   }
   telaModificada = true;
 }
-
-
 
 
 
