@@ -9,7 +9,7 @@
 #define ENC_SW   4
 
 #define NUM_LEDS  12 //numero de leds na fita
-#define DATA_PIN  7 //pino da fita led
+#define DATA_PIN  6 //pino da fita led
 #define MAX_NOTAS 300 //numero de notas maximo q vamos guardar na gravação
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
