@@ -1,170 +1,163 @@
-#include <FastLED.h>
+#include <FastLED.h> //pra fita de led
 #include <GFButton.h>
 
-const int NUM_LEDS = 12;
-const int DATA_PIN = 7;
+#define NUM_LEDS  12 //numero de leds na fita
+#define DATA_PIN  7 //pino da fita led
+#define MAX_NOTAS 300 //numero de notas maximo q vamos guardar na gravação
 
-//Botão de teclas musicais
+// Botões de teclas musicais (DO, RE, MI, FA, SOL, LA, SI)
+GFButton teclas[] = {
+  GFButton(A8), //azul
+  GFButton(A15), //amarelo
+  GFButton(A0), //preto
+  GFButton(A2), //azul
+  GFButton(A3), //preto
+  GFButton(A4),  //amarelo
+  GFButton(A5) //azul
+};
+const int NUM_TECLAS = 7;
+String notas[] = {"DO", "RE", "MI", "FA", "SOL", "LA", "SI"};
 
-GFButton tecla1(A8);
-GFButton tecla2(A15);
-GFButton tecla3(A0);
-GFButton tecla4(A2);
-GFButton tecla5(A3);
-GFButton tecla6(A4);
-GFButton tecla7(A5);
+// Botões de controle
+GFButton botao_play_pause(A11); //verde
+GFButton botao_gravacao(A13); //vermelho
 
-//Botão de funcionalidades extras: play/pause, gravar
-
-GFButton botao_play_pause(A11);
-GFButton botao_gravacao(A13);
-
+// dois estados de controle pra play pause e gravação
 bool estado_play_pause = false;
 bool estado_gravacao = false;
 
-String notas[] = {
-  "DO",
-  "RE",
-  "MI",
-  "FA",
-  "SOL",
-  "LA",
-  "SI"
-};
-
-int gravacao[300];
+// Gravação
+int gravacao[MAX_NOTAS];         // qual nota (0-6) foi tocada em cada posição
+unsigned long tempos[MAX_NOTAS]; // duração de cada nota
+unsigned long pausas[MAX_NOTAS]; // pausa antes de cada nota
 int total_de_notas = 0;
 
-unsigned long tempos[300];
-unsigned long pausas[300];
-unsigned long tempo_inicio = 0;
-unsigned long tempo_ultimo_release = 0;
+unsigned long tempo_inicio = 0;         // quando a nota atual começou
+unsigned long tempo_ultimo_release = 0; // quando a última nota foi solta
 
-CRGB leds[NUM_LEDS];
+CRGB leds[NUM_LEDS]; //a gente escerve nessa lista e ai FastLED manda pra fita de led
 
-void marca_nota(int nota){
-    if (estado_gravacao){
-        if (total_de_notas < 300) {
-            gravacao[total_de_notas] = nota;
-            total_de_notas += 1;
-        }
-    }
+// os Handlers precisam ser 7 funções separadas por causa da biblioteca GFButton
+// como a GFButton nao acieta párametros, temos que chamar uma função 
+// para cada tecla presssionada 
+void whenPressed0() { tecla_pressed(0); }
+void whenPressed1() { tecla_pressed(1); }
+void whenPressed2() { tecla_pressed(2); }
+void whenPressed3() { tecla_pressed(3); }
+void whenPressed4() { tecla_pressed(4); }
+void whenPressed5() { tecla_pressed(5); }
+void whenPressed6() { tecla_pressed(6); }
+
+void whenReleased0() { tecla_released(0); }
+void whenReleased1() { tecla_released(1); }
+void whenReleased2() { tecla_released(2); }
+void whenReleased3() { tecla_released(3); }
+void whenReleased4() { tecla_released(4); }
+void whenReleased5() { tecla_released(5); }
+void whenReleased6() { tecla_released(6); }
+
+// Arrays de ponteiros para funções, pra gente poder chamar a função certa dependendo da tecla
+void (*handlersPress[])()   = {whenPressed0, whenPressed1, whenPressed2, whenPressed3,
+                               whenPressed4, whenPressed5, whenPressed6};
+void (*handlersRelease[])() = {whenReleased0, whenReleased1, whenReleased2, whenReleased3,
+                               whenReleased4, whenReleased5, whenReleased6};
+
+void tecla_pressed(int i) {
+  leds[i] = CRGB(255, 0, 0);
+  FastLED.show();
+  Serial.println("{\"nota\": \"" + notas[i] + "\", \"ativa\": true}");
+
+  if (estado_gravacao && total_de_notas < MAX_NOTAS) {
+    pausas[total_de_notas] = millis() - tempo_ultimo_release;
+    tempo_inicio = millis();
+    gravacao[total_de_notas] = i;
+    total_de_notas++;
+  }
 }
 
-void tecla_pressed(int i){
-    leds[i] = CRGB(255, 0, 0);
-    FastLED.show();
-    Serial.println("{\"nota\": \""+ notas[i] + "\", \"ativa\": true}");
-    if (estado_gravacao) {
-        pausas[total_de_notas] = millis() - tempo_ultimo_release;
-        tempo_inicio = millis();
-    }
-    marca_nota(i);
+void tecla_released(int i) {
+  leds[i] = CRGB(0, 0, 0);
+  FastLED.show();
+  Serial.println("{\"nota\": \"" + notas[i] + "\", \"ativa\": false}");
+
+  if (estado_gravacao && total_de_notas > 0) {
+    tempos[total_de_notas - 1] = millis() - tempo_inicio;
+    tempo_ultimo_release = millis();
+  }
 }
-
-void tecla_released(int i){
-    leds[i] = CRGB(0, 0, 0);
-    FastLED.show();
-    Serial.println("{\"nota\": \""+ notas[i] + "\", \"ativa\": false}");
-    if (estado_gravacao) {
-        tempos[total_de_notas - 1] = millis() - tempo_inicio;
-        tempo_ultimo_release = millis();
-    }
-}
-
-void whenPressed1() { tecla_pressed(0); } 
-void whenPressed2() { tecla_pressed(1); }
-void whenPressed3() { tecla_pressed(2); }
-void whenPressed4() { tecla_pressed(3); }
-void whenPressed5() { tecla_pressed(4); }
-void whenPressed6() { tecla_pressed(5); }
-void whenPressed7() { tecla_pressed(6); }
-
-void whenReleased1() { tecla_released(0); } 
-void whenReleased2() { tecla_released(1); }
-void whenReleased3() { tecla_released(2); }
-void whenReleased4() { tecla_released(3); }
-void whenReleased5() { tecla_released(4); }
-void whenReleased6() { tecla_released(5); }
-void whenReleased7() { tecla_released(6); }
 
 void whenPressedPlayPause() {
-    estado_play_pause = !estado_play_pause;
-    leds[7] = estado_play_pause ? CRGB(255, 0, 0) : CRGB(0, 0, 0);
-    FastLED.show();
-    if (estado_play_pause){
-        // enviando pela serial formato JSON
-        Serial.print("{\"notas\":[");
-        for (int i = 0; i < total_de_notas; i++) {
-            Serial.print("{\"nota\":\"");
-            Serial.print(notas[gravacao[i]]);
-            Serial.print("\",\"inicio\":");
-            Serial.print(pausas[i]);
-            Serial.print(",\"duracao\":");
-            Serial.print(tempos[i]);
-            Serial.print("}");
-            if (i < total_de_notas - 1) Serial.print(",");
-        }
-        Serial.println("]}");
+  estado_play_pause = !estado_play_pause;
+  leds[7] = estado_play_pause ? CRGB(255, 0, 0) : CRGB(0, 0, 0);
+  FastLED.show();
 
-        // replay das notas gravadas por led
-        for (int i = 0; i < total_de_notas; i++) {
-            delay(pausas[i]);
-            leds[gravacao[i]] = CRGB(0, 0, 255);
-            FastLED.show();
-            delay(tempos[i]);
-            leds[gravacao[i]] = CRGB(0, 0, 0);
-            FastLED.show();
-        }
-    }
+  if (!estado_play_pause) return;
+
+  // Envia gravação pela serial em JSON
+  Serial.print("{\"notas\":[");
+  for (int i = 0; i < total_de_notas; i++) {
+    Serial.print("{\"nota\":\"");
+    Serial.print(notas[gravacao[i]]);
+    Serial.print("\",\"inicio\":");
+    Serial.print(pausas[i]);
+    Serial.print(",\"duracao\":");
+    Serial.print(tempos[i]);
+    Serial.print("}");
+    if (i < total_de_notas - 1) Serial.print(",");
+  }
+  Serial.println("]}");
+
+  // Reproduz nos LEDs
+  for (int i = 0; i < total_de_notas; i++) {
+    delay(pausas[i]);
+    leds[gravacao[i]] = CRGB(0, 0, 255);
+    FastLED.show();
+    delay(tempos[i]);
+    leds[gravacao[i]] = CRGB(0, 0, 0);
+    FastLED.show();
+  }
 }
 
 void whenPressedGravacao() {
-    if (!estado_gravacao){
-        total_de_notas = 0;
-        tempo_ultimo_release = millis();
-    }
-    estado_gravacao = !estado_gravacao;
-    leds[8] = estado_gravacao ? CRGB(255, 0, 0) : CRGB(0, 0, 0);
-    FastLED.show();
+  if (!estado_gravacao) {
+    total_de_notas = 0;
+    tempo_ultimo_release = millis();
+  }
+  estado_gravacao = !estado_gravacao;
+  leds[8] = estado_gravacao ? CRGB(255, 0, 0) : CRGB(0, 0, 0);
+  FastLED.show();
 }
 
 void setup() {
   Serial.begin(9600);
 
+  //configuração da fita led
   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS);
+  FastLED.clear(); // zera todo o array leds[] (deixa tudo preto)
+  FastLED.show(); //efetivamente envia os dados pra fita
 
-  FastLED.clear();
-  FastLED.show();
+  //"Casa" cada tecla com seu handler. Em português: 
+  // "tecla[0], quando você for pressionada, chame handlersPress[0]"
+  for (int i = 0; i < NUM_TECLAS; i++) {
+    teclas[i].setPressHandler(handlersPress[i]);
+    teclas[i].setReleaseHandler(handlersRelease[i]);
+  }
 
-  tecla1.setPressHandler(whenPressed1);
-  tecla1.setReleaseHandler(whenReleased1);
-  tecla2.setPressHandler(whenPressed2);
-  tecla2.setReleaseHandler(whenReleased2);
-  tecla3.setPressHandler(whenPressed3);
-  tecla3.setReleaseHandler(whenReleased3);
-  tecla4.setPressHandler(whenPressed4);
-  tecla4.setReleaseHandler(whenReleased4);
-  tecla5.setPressHandler(whenPressed5);
-  tecla5.setReleaseHandler(whenReleased5);
-  tecla6.setPressHandler(whenPressed6);
-  tecla6.setReleaseHandler(whenReleased6);
-  tecla7.setPressHandler(whenPressed7);
-  tecla7.setReleaseHandler(whenReleased7);
-
+  // só configura press e não tem release, quando você solta o play, nada acontece
   botao_play_pause.setPressHandler(whenPressedPlayPause);
   botao_gravacao.setPressHandler(whenPressedGravacao);
 }
 
+// chama .process() em cada botão, milhares de vezes por segundo.
 void loop() {
-  tecla1.process();
-  tecla2.process();
-  tecla3.process();
-  tecla4.process();
-  tecla5.process();
-  tecla6.process();
-  tecla7.process();
 
+    // por baixo dos panos o process:
+    // Lê o estado do pino (pressionado ou solto?)
+    // Aplica debounce (ignora ruído dos contatos elétricos)
+    // Se detectou uma mudança real, chama o handler correspondente
+  for (int i = 0; i < NUM_TECLAS; i++) {
+    teclas[i].process();
+  }
   botao_play_pause.process();
   botao_gravacao.process();
 }

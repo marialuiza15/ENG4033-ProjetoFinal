@@ -1,8 +1,8 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-#define ENC_CLK  2
-#define ENC_DT   3
+#define ENC_CLK  2   
+#define ENC_DT   3  
 #define ENC_SW   4
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
@@ -17,105 +17,105 @@ byte charSeta[8] = {
   0b00000, 
   0b00000
 };
-byte charCheck[8] = {
-  0b00000, 
-  0b00001, 
-  0b00011, 
-  0b10110,
-  0b11100, 
-  0b01000, 
-  0b00000, 
-  0b00000
-};
 
-enum Estado {
-  MENU_PRINCIPAL,
-  EDITANDO_INSTRUMENTO,
-  EDITANDO_BPM,
-  EDITANDO_ESTILO
-};
+enum Estado { NAVEGANDO, EDITANDO };
+Estado estadoAtual = NAVEGANDO;
 
-Estado estadoAtual = MENU_PRINCIPAL;
+const int NUM_ITENS = 3;
 
-const int NUM_ITENS_MENU = 3;
-const char* itensMenu[NUM_ITENS_MENU] = {"BPM", "Estilo", "Instrumento"};
+const char* itensMenu[NUM_ITENS] = {"BPM", "Estilo", "Inst."};
 int cursorMenu = 0;
 
-const int NUM_INSTRUMENTOS = 5;
-const char* listaInstrumentos[NUM_INSTRUMENTOS] = {
-  "Orgao", "Flauta", "Guitarra", "Bateria", "Piano"
-};
-int instrumentoAtual  = 0;
-int cursorInstrumento = 0;
-
-// BPM
 int valorBPM = 100;
 
 // Estilos
 const int NUM_ESTILOS = 4;
 const char* listaEstilos[NUM_ESTILOS] = {
-  "Rock", "Jazz", "Samba", "Escolha da IA"
+  "Rock", "Jazz", "Samba", "Opcao IA"
 };
-int estiloAtual  = 0;
-int cursorEstilo = 0;
+int estiloAtual = 0;
 
-// Encoder
-int  ultimoEstadoCLK;
+const int NUM_INSTRUMENTOS = 5;
+
+const char* listaInstrumentos[NUM_INSTRUMENTOS] = {
+  "Orgao", "Flauta", "Guitarra", "Bateria", "Piano"
+};
+int instrumentoAtual = 0;
+
+volatile int encoderDelta = 0;
+
 bool botaoPressionado = false;
 unsigned long tempoUltimoBotao = 0;
-const unsigned long DEBOUNCE_MS = 250;
-
-
+const unsigned long DEBOUNCE_MS = 200;
 
 bool telaModificada = true;
 
+void ISR_encoder() {
+  if (digitalRead(ENC_DT) == HIGH) {
+    encoderDelta++;
+  } else {
+    encoderDelta--;
+  }
+}
+
 void setup() {
   Serial.begin(9600);
-  pinMode(ENC_CLK, INPUT);
-  pinMode(ENC_DT,  INPUT);
+
+  pinMode(ENC_CLK, INPUT_PULLUP);
+  pinMode(ENC_DT,  INPUT_PULLUP);
   pinMode(ENC_SW,  INPUT_PULLUP);
-  ultimoEstadoCLK = digitalRead(ENC_CLK);
+
+  attachInterrupt(digitalPinToInterrupt(ENC_CLK), ISR_encoder, FALLING);
 
   lcd.init();
   lcd.backlight();
   lcd.createChar(0, charSeta);
-  lcd.createChar(1, charCheck);
   lcd.clear();
+
   telaModificada = true;
   imprimirEstadoSerial();
 }
 
 void loop() {
-  lerEncoder();
+  processarEncoder();
   lerBotao();
   if (telaModificada) {
-    desenharTela();
+    desenharMenu();
     telaModificada = false;
   }
 }
 
-void lerEncoder() {
-  int estadoAtualCLK = digitalRead(ENC_CLK);
-  if (estadoAtualCLK != ultimoEstadoCLK && estadoAtualCLK == LOW) {
-    int direcao = (digitalRead(ENC_DT) != estadoAtualCLK) ? 1 : -1;
+void processarEncoder() {
+  int delta;
+  noInterrupts();
+  delta = encoderDelta;
+  encoderDelta = 0;
+  interrupts();
 
-    switch (estadoAtual) {
-      case MENU_PRINCIPAL:
-        cursorMenu = constrain(cursorMenu + direcao, 0, NUM_ITENS_MENU - 1);
+  if (delta == 0) return;
+
+  if (estadoAtual == NAVEGANDO) {
+    cursorMenu = constrain(cursorMenu + delta, 0, NUM_ITENS - 1);
+  } else {
+    switch (cursorMenu) {
+      case 0: {  
+        int deltaAbs = abs(delta);
+        int mult = 1;
+        if (deltaAbs >= 5) mult = 5;      
+        else if (deltaAbs >= 3) mult = 2;  
+        valorBPM = constrain(valorBPM + delta * mult, 20, 300);
         break;
-      case EDITANDO_INSTRUMENTO:
-        cursorInstrumento = constrain(cursorInstrumento + direcao, 0, NUM_INSTRUMENTOS - 1);
+      }
+      case 1:  
+        estiloAtual = constrain(estiloAtual + delta, 0, NUM_ESTILOS - 1);
         break;
-      case EDITANDO_BPM:
-        valorBPM = constrain(valorBPM + direcao, 20, 300);
-        break;
-      case EDITANDO_ESTILO:
-        cursorEstilo = constrain(cursorEstilo + direcao, 0, NUM_ESTILOS - 1);
+      case 2:  
+        instrumentoAtual = constrain(instrumentoAtual + delta, 0, NUM_INSTRUMENTOS - 1);
         break;
     }
-    telaModificada = true;
+    if (cursorMenu == 0) imprimirEstadoSerial();
   }
-  ultimoEstadoCLK = estadoAtualCLK;
+  telaModificada = true;
 }
 
 void lerBotao() {
@@ -124,162 +124,51 @@ void lerBotao() {
     botaoPressionado = true;
     tempoUltimoBotao = millis();
 
-    switch (estadoAtual) {
-      case MENU_PRINCIPAL:
-        if (cursorMenu == 0) {
-          estadoAtual = EDITANDO_BPM;
-        } else if (cursorMenu == 1) {
-          estadoAtual = EDITANDO_ESTILO;
-          cursorEstilo = estiloAtual;
-        } else if (cursorMenu == 2) {
-          estadoAtual = EDITANDO_INSTRUMENTO;
-          cursorInstrumento = instrumentoAtual;
-        }
-        break;
-
-      case EDITANDO_INSTRUMENTO:
-        instrumentoAtual = cursorInstrumento;
-        estadoAtual = MENU_PRINCIPAL;
-        imprimirEstadoSerial();
-        break;
-
-      case EDITANDO_BPM:
-        estadoAtual = MENU_PRINCIPAL;
-        imprimirEstadoSerial();
-        break;
-
-      case EDITANDO_ESTILO:
-        estiloAtual = cursorEstilo;
-        estadoAtual = MENU_PRINCIPAL;
-        imprimirEstadoSerial();
-        break;
+    estadoAtual = (estadoAtual == NAVEGANDO) ? EDITANDO : NAVEGANDO;
+    if (estadoAtual == NAVEGANDO) {
+      imprimirEstadoSerial(); 
     }
     telaModificada = true;
   }
   if (!leitura) botaoPressionado = false;
 }
 
-
-void desenharTela() {
+void desenharMenu() {
   lcd.clear();
-  switch (estadoAtual) {
-    case MENU_PRINCIPAL:       
-      desenharMenuPrincipal();      
-      break;
-    case EDITANDO_INSTRUMENTO: 
-      desenharSeletorInstrumento(); 
-      break;
-    case EDITANDO_BPM:         
-      desenharEditorBPM();          
-      break;
-    case EDITANDO_ESTILO:      
-      desenharSeletorEstilo();      
-      break;
-  }
 
-}
-
-void desenharMenuPrincipal() {
   lcd.setCursor(0, 0);
   lcd.print("- MENU -   - ATUAL -");
 
-  for (int i = 0; i < NUM_ITENS_MENU; i++) {
-    lcd.setCursor(0, i + 1);
+  // Linhas 1-3: as 3 opções
+  for (int i = 0; i < NUM_ITENS; i++) {
+    int linha = i + 1;
+    lcd.setCursor(0, linha);
+
     if (i == cursorMenu) lcd.write(byte(0));
     else lcd.print(" ");
+
     lcd.print(itensMenu[i]);
+    lcd.setCursor(8, linha);
 
-    lcd.setCursor(13, i + 1);
-    if (i == 0) {
-      lcd.print("[");
-      lcd.print(valorBPM);
-      lcd.print("]");
-    } else if (i == 1) {
-      lcd.print("[");
-      String est = listaEstilos[estiloAtual];
-      if (est.length() > 5) est = est.substring(0, 5);
-      lcd.print(est);
-      lcd.print("]");
+    char abre, fecha;
+    if (i == cursorMenu && estadoAtual == EDITANDO) {
+      abre = '<'; fecha = '>';
     } else {
-      lcd.print("[");
-      String inst = listaInstrumentos[instrumentoAtual];
-      if (inst.length() > 5) inst = inst.substring(0, 5);
-      lcd.print(inst);
-      lcd.print("]");
+      abre = '['; fecha = ']';
     }
-  }
-}
 
-void desenharSeletorInstrumento() {
-  lcd.setCursor(0, 0);
-  lcd.print("-> Instrumento");
+    lcd.print(abre);
 
-  int inicioScroll = 0;
-  if (cursorInstrumento >= 3) inicioScroll = cursorInstrumento - 2;
+    String valor;
+    if (i == 0)      valor = String(valorBPM);
+    else if (i == 1) valor = listaEstilos[estiloAtual];
+    else             valor = listaInstrumentos[instrumentoAtual];
 
-  for (int v = 0; v < 3; v++) {
-    int idx = inicioScroll + v;
-    if (idx >= NUM_INSTRUMENTOS) break;
+    if (valor.length() > 10) valor = valor.substring(0, 10);
+    while (valor.length() < 10) valor += ' ';
+    lcd.print(valor);
 
-    int linha = v + 1;
-    lcd.setCursor(0, linha);
-    if (idx == cursorInstrumento) {
-      lcd.print(" ");
-      lcd.write(byte(0));
-      lcd.print(" ");
-    } else {
-      lcd.print("   ");
-    }
-    lcd.print(listaInstrumentos[idx]);
-
-    if (idx == instrumentoAtual) {
-      lcd.setCursor(18, linha);
-      lcd.write(byte(1));
-    }
-  }
-}
-
-void desenharEditorBPM() {
-  lcd.setCursor(0, 0);
-  lcd.print("-> BPM");
-  lcd.setCursor(2, 1);
-  lcd.print("Velocidade: [");
-  lcd.print(valorBPM);
-  lcd.print("]");
-
-  lcd.setCursor(0, 2);
-  lcd.print("Gire para alterar");
-  lcd.setCursor(0, 3);
-  lcd.print("Clique para salvar");
-  
-}
-
-void desenharSeletorEstilo() {
-  lcd.setCursor(0, 0);
-  lcd.print("-> Estilo");
-
-  int inicioScroll = 0;
-  if (cursorEstilo >= 3) inicioScroll = cursorEstilo - 2;
-
-  for (int v = 0; v < 3; v++) {
-    int idx = inicioScroll + v;
-    if (idx >= NUM_ESTILOS) break;
-
-    int linha = v + 1;
-    lcd.setCursor(0, linha);
-    if (idx == cursorEstilo) {
-      lcd.print(" ");
-      lcd.write(byte(0));
-      lcd.print(" ");
-    } else {
-      lcd.print("   ");
-    }
-    lcd.print(listaEstilos[idx]);
-
-    if (idx == estiloAtual) {
-      lcd.setCursor(18, linha);
-      lcd.write(byte(1));
-    }
+    lcd.print(fecha);
   }
 }
 
