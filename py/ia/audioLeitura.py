@@ -66,7 +66,7 @@ def gerar_sequencia_musical(json_entrada: dict[str, Any]) -> dict[str, Any]:
         "max_tokens": 700,
     }
     
-    resposta = post(url, json=payload, timeout=60)
+    resposta = post(url, json=payload)
     resposta.raise_for_status()
     dados = resposta.json()
 

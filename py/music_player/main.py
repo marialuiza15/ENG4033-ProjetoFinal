@@ -119,6 +119,7 @@ loop_lock = threading.Lock()
 
 inicio_ciclo_loop = time.time()
 duracao_ciclo_atual = 2000
+gravando = False
 
 
 # =========================
@@ -350,36 +351,38 @@ def processar_tecla(dados):
         # toca ao vivo
         fs.noteon(canal, nota, 100)
         # grava início
-        inicio = obter_posicao_no_loop()
-        with loop_lock:
-            #dentro desse lock, criamos uma lista inicial para salvar as notas que foram clicadas (ainda nao sabemos quando vao ser soltas)
-            notas_ativas_loop[nota_id] = {
-                "nota": nota,
-                "inicio": inicio,
-                "instrumento": instrumento_atual,
-            }
+        if gravando:
+            inicio = obter_posicao_no_loop()
+            with loop_lock:
+                #dentro desse lock, criamos uma lista inicial para salvar as notas que foram clicadas (ainda nao sabemos quando vao ser soltas)
+                notas_ativas_loop[nota_id] = {
+                    "nota": nota,
+                    "inicio": inicio,
+                    "instrumento": instrumento_atual,
+                }
     else:
         fs.noteoff(canal, nota)
         # grava fim
-        fim = obter_posicao_no_loop()
-        with loop_lock:
-            #verifica se a nota que soltamos esta de fato dentro da lista anterior que criamos
-            if nota_id in notas_ativas_loop:
-                #se sim, salva a nota em especifico e retira ela da lista
-                salva = notas_ativas_loop.pop(nota_id)
-                inicio = salva["inicio"]
-                #calculo para saber onde encaixar a nota no loop da batida
-                if fim >= inicio:
-                    duracao = fim - inicio
-                else:
-                    duracao = duracao_ciclo_atual - inicio + fim
-                #adiciona no loop, toca junto e nao é um arquivo .json
-                loop_notas.append({
-                    "nota": salva["nota"],
-                    "inicio": inicio,
-                    "duracao": duracao,
-                    "instrumento": salva["instrumento"],
-                })
+        if gravando:
+            fim = obter_posicao_no_loop()
+            with loop_lock:
+                #verifica se a nota que soltamos esta de fato dentro da lista anterior que criamos
+                if nota_id in notas_ativas_loop:
+                    #se sim, salva a nota em especifico e retira ela da lista
+                    salva = notas_ativas_loop.pop(nota_id)
+                    inicio = salva["inicio"]
+                    #calculo para saber onde encaixar a nota no loop da batida
+                    if fim >= inicio:
+                        duracao = fim - inicio
+                    else:
+                        duracao = duracao_ciclo_atual - inicio + fim
+                    #adiciona no loop, toca junto e nao é um arquivo .json
+                    loop_notas.append({
+                        "nota": salva["nota"],
+                        "inicio": inicio,
+                        "duracao": duracao,
+                        "instrumento": salva["instrumento"],
+                    })
 
 #converte a lista, de nota para numero identificador SOL-> 67
 def converter_notas_recebidas(notas_recebidas):
@@ -404,6 +407,16 @@ def processar_sequencia(sequencia_notas_recebidas):
 
 #recebe dados do arduino e verifica qual funcao usar
 def processar_dados(dados):
+    if "gravando" in dados:
+        global gravando
+        gravando = dados["gravando"]
+        if gravando:
+            with loop_lock:
+                loop_notas.clear()
+                notas_ativas_loop.clear()
+                inicio_ciclo_loop = time.time() 
+        return
+
     #se tem notas, significa que é a sequencia
     if "notas" in dados:
         processar_sequencia(dados)
@@ -413,8 +426,6 @@ def processar_dados(dados):
     #se tem nota (singular) e ativa significa que é a nota padrao
     elif "nota" in dados and "ativa" in dados:
         processar_tecla(dados)
-    else:
-        print(f"[OUTRO] {dados}")
 
 # =========================
 # TESTE SEM ARDUINO
