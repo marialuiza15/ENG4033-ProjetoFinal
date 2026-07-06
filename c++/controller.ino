@@ -74,9 +74,7 @@ const int NUM_INSTRUMENTOS = 5;
 const char* listaInstrumentos[NUM_INSTRUMENTOS] = {"Orgao", "Flauta", "Guitarra", "Bateria", "Piano"};
 int instrumentoAtual = 0; //default orgao
 
-volatile int encoderDelta = 0; // a marcação volatile indica ser uma variavel 
-// de mudança constante, o sistema guarda essa avriavel em um registardor especial
-
+int posicaoAnterior = 0;
 
 bool botaoPressionado = false;
 bool telaModificada = true;
