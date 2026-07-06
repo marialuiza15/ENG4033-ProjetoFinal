@@ -203,8 +203,16 @@ void whenPressedGravacao() {
     tempo_ultimo_release = millis();
   }
   estado_gravacao = !estado_gravacao;
-  leds[8] = estado_gravacao ? CRGB(255, 0, 0) : CRGB(0, 0, 0);
+  if (estado_gravacao){
+    leds[8] = CRGB(255, 0, 0);
+    Serial.println("{\"gravando\": true}");
+  }
+  else{
+    leds[8] = CRGB(0, 0, 0);
+    Serial.println("{\"gravando\": false}");
+  }
   FastLED.show();
+
 }
 
 
