@@ -1,7 +1,7 @@
 {
-    "instrumento": "orgao",
+    "instrumento": "Orgao",
     "bpm": 120,
-    "estilo": "rock",
+    "estilo": "Rock",
     "sequencia": [
         {
             "nota": 60,
