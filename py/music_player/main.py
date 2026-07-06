@@ -416,7 +416,7 @@ def processar_sequencia(sequencia_notas_recebidas):
     #modifica a musica com a IA
     musica_ia=gerar_sequencia_musical(musica_completa)
     #para a batida antiga para comecar a batida da IA
-    parar_batida()
+    #parar_batida()
     #toca a musica em thread
     tocar_musica_em_thread(musica_ia)
 
