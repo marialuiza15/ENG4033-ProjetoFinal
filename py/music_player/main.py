@@ -26,15 +26,34 @@ SOUNDFONT = PASTA_ARQUIVOS / "FluidR3_GM.sf2"
 # FLUIDSYNTH / DLLS
 # =========================
 
-if platform.system() == "Windows":
-    FLUIDSYNTH_BIN = (
+def localizar_fluidsynth_bin():
+    candidatos = [
+        PASTA_ARQUIVOS / "fluidsynth-v2.5.6-win10-x64-cpp11" / "bin",
+        PASTA_ARQUIVOS
+        / "fluidsynth-v2.5.6-win10-x64-cpp11"
+        / "fluidsynth-v2.5.6-win10-x64-cpp11"
+        / "bin",
+        PASTA_ARQUIVOS / "fluidsynth-v2.5.5-win10-x64-cpp11" / "bin",
         PASTA_ARQUIVOS
         / "fluidsynth-v2.5.5-win10-x64-cpp11"
-        / "bin"
-    )
+        / "fluidsynth-v2.5.5-win10-x64-cpp11"
+        / "bin",
+    ]
 
-    os.add_dll_directory(str(FLUIDSYNTH_BIN))
-    os.environ["PATH"] = str(FLUIDSYNTH_BIN) + os.pathsep + os.environ["PATH"]
+    for candidato in candidatos:
+        if candidato.exists():
+            return candidato
+
+    return None
+
+if platform.system() == "Windows":
+    FLUIDSYNTH_BIN = localizar_fluidsynth_bin()
+
+    if FLUIDSYNTH_BIN is not None:
+        os.add_dll_directory(str(FLUIDSYNTH_BIN))
+        os.environ["PATH"] = str(FLUIDSYNTH_BIN) + os.pathsep + os.environ["PATH"]
+    else:
+        print(f"[AVISO] Pasta do Fluidsynth não encontrada em {PASTA_ARQUIVOS}")
 
 
 import fluidsynth
@@ -44,9 +63,9 @@ import fluidsynth
 # IMPORT DA IA
 # =========================
 
-sys.path.insert(0, str(PASTA_IA))
+sys.path.insert(0, str(PASTA_PY))
 
-from audioLeitura import gerar_sequencia_musical
+from ia.audioLeitura import gerar_sequencia_musical
 
 
 # =========================
@@ -63,24 +82,6 @@ notas_map = {
     "SI": 71,
 }
 
-instrumentos_map = {
-    "Piano": "piano",
-    "Orgao": "orgao",
-    "Órgão": "orgao",
-    "Flauta": "flauta",
-    "Guitarra": "guitarra",
-    "Bateria": "bateria",
-    "Baixo": "baixo",
-    "Sintetizador": "sintetizador",
-    "Strings": "strings",
-}
-
-estilo_map = {
-    "Rock": "rock",
-    "Jazz": "Jazz",
-    "Samba": "Samba",
-    "Escolha da IA": "completo",
-}
 
 INSTRUMENTOS = {
     "piano": {"canal": 0, "programa": 0},
@@ -226,157 +227,89 @@ def snapshot_estado_musica():
     with estado_lock:
         return estado_musica.copy()
 
+def processar_configuracao(dados):
+    global instrumento_atual
+    with estado_lock:
+        estado_musica["instrumento"] = dados["instrumento"]
+        estado_musica["bpm"] = dados["bpm"]
+        estado_musica["estilo"] = dados["estilo"]
 
-# =========================
-# THREAD DA BATIDA CONTÍNUA
-# =========================
+    instrumento_atual = dados["instrumento"]
+
+#o evento seriam as notas no formato de "nota": 64, "inicio": 500, "duracao": 500, "instrumento": "flauta"
+def tocar_eventos(eventos, parar_evento, duracao_total):
+    seq = fluidsynth.Sequencer(use_system_timer=False)
+    synth_id = seq.register_fluidsynth(fs)
+
+    for evento in eventos:
+        inst = evento.get("instrumento", "piano") #tenta pegar o instrumento, se nao tem é piano
+        canal = INSTRUMENTOS[inst]["canal"]
+        fim = evento["inicio"] + evento["duracao"]
+        seq.note_on(evento["inicio"], canal, evento["nota"], 100, dest=synth_id)
+        seq.note_off(fim, canal, evento["nota"], dest=synth_id)
+
+    tempo = 0
+    while tempo <= duracao_total and not parar_evento.is_set():
+        seq.process(tempo)
+        time.sleep(0.01)
+        tempo += 10
+
+
+#funcao que prepara a musica para chamar o tocar eventos, transforma musica em sequencia e tb da a duracao
+def tocar_melodia(musica, parar_evento):
+    #adiciona o instrumento no final de cada nota
+    sequencia=preparar_sequencia(musica)
+    #calcula a duracai
+    duracao=calcular_duracao(sequencia)
+    #toca a sequencia efetivamente
+    tocar_eventos(sequencia,parar_evento,duracao)
+
+
+#faz rodar em thread
+def tocar_musica_em_thread(musica):
+    global thread_musica
+    #verifica se a musica existe e se esta tocando
+    if thread_musica is not None and thread_musica.is_alive():
+        musica_stop_event.set()
+        thread_musica.join(timeout=1)
+    #limpa o evento de parar a musica para reiniciar a nova musica
+    musica_stop_event.clear()
+
+    #reiniciando a nova musica
+    thread_musica=threading.Thread(target=tocar_melodia, args=(musica, musica_stop_event), daemon=True)
+    thread_musica.start()
 
 def loop_batida():
-    print("[BATIDA] Thread da batida iniciada.")
-
     batidas = carregar_json(PASTA_ARQUIVOS / "batidas.json")
+    global inicio_ciclo_loop, duracao_ciclo_atual
 
+    #enquanto a batida nao for parada, ele pega o estado atual das configuracoes e atribui ao estilo e bpm que vamos usar
     while not batida_stop_event.is_set():
         estado = snapshot_estado_musica()
-
         estilo = estado["estilo"]
         bpm = estado["bpm"]
 
-        if estilo not in batidas:
-            print(f"[BATIDA] Estilo '{estilo}' não encontrado.")
-            time.sleep(0.5)
-            continue
-
-        batida = batidas[estilo]
-        eventos_batida, duracao_batida = preparar_batida(batida, bpm)
-        global inicio_ciclo_loop, duracao_ciclo_atual
-
+        #chama a preparar batida para de fato preparar a batida
+        eventos, duracao = preparar_batida(batidas[estilo], bpm)
+        
+        #
         with loop_lock:
             inicio_ciclo_loop = time.time()
-            duracao_ciclo_atual = duracao_batida
-
-        seq = fluidsynth.Sequencer(use_system_timer=False)
-        synth_id = seq.register_fluidsynth(fs)
-
-        for evento in eventos_batida:
-            nota = evento["nota"]
-            inicio = evento["inicio"]
-            duracao = evento["duracao"]
-            fim = inicio + duracao
-
-            canal = INSTRUMENTOS["bateria"]["canal"]
-
-            seq.note_on(inicio, canal, nota, 100, dest=synth_id)
-            seq.note_off(fim, canal, nota, dest=synth_id)
-
-
-        with loop_lock:
-            notas_do_loop = loop_notas.copy()
-
-        for evento in notas_do_loop:
-            instrumento = evento["instrumento"]
-
-            if instrumento not in INSTRUMENTOS:
-                continue
-
-            canal = INSTRUMENTOS[instrumento]["canal"]
-
-            nota = evento["nota"]
-            inicio = evento["inicio"]
-            duracao = evento["duracao"]
-            fim = inicio + duracao
-
-            seq.note_on(inicio, canal, nota, 100, dest=synth_id)
-            seq.note_off(fim, canal, nota, dest=synth_id)
-
-        tempo = 0
-
-        while tempo <= duracao_batida and not batida_stop_event.is_set():
-            seq.process(tempo)
-            time.sleep(0.01)
-            tempo += 10
-
-    print("[BATIDA] Thread da batida encerrada.")
+            duracao_ciclo_atual = duracao
+            eventos_completos = eventos + loop_notas.copy()
+        #chama a tocar eventos com as configuracoes que criamos
+        tocar_eventos(eventos_completos, batida_stop_event, duracao)
 
 
 def iniciar_batida():
     global thread_batida
-
     batida_stop_event.clear()
-
-    thread_batida = threading.Thread(
-        target=loop_batida,
-        daemon=True
-    )
-
+    thread_batida=threading.Thread(target=loop_batida, daemon=True)
     thread_batida.start()
-
 
 def parar_batida():
     batida_stop_event.set()
-
-
-# =========================
-# THREAD DA MÚSICA GERADA
-# =========================
-
-def tocar_melodia(musica_completa, stop_event):
-    sequencia = preparar_sequencia(musica_completa)
-
-    if not sequencia:
-        print("[PLAY] Sequência vazia.")
-        return
-
-    seq = fluidsynth.Sequencer(use_system_timer=False)
-    synth_id = seq.register_fluidsynth(fs)
-
-    duracao_musica = calcular_duracao(sequencia)
-
-    for evento in sequencia:
-        instrumento = evento["instrumento"]
-
-        if instrumento not in INSTRUMENTOS:
-            print(f"[AVISO] Instrumento desconhecido: {instrumento}")
-            continue
-
-        canal = INSTRUMENTOS[instrumento]["canal"]
-
-        nota = evento["nota"]
-        inicio = evento["inicio"]
-        duracao = evento["duracao"]
-        fim = inicio + duracao
-
-        seq.note_on(inicio, canal, nota, 100, dest=synth_id)
-        seq.note_off(fim, canal, nota, dest=synth_id)
-
-    tempo_atual = 0
-
-    while tempo_atual <= duracao_musica and not stop_event.is_set():
-        seq.process(tempo_atual)
-        time.sleep(0.01)
-        tempo_atual += 10
-
-    print("[PLAY] Música finalizada.")
-
-
-def tocar_musica_em_thread(musica_completa):
-    global thread_musica
-
-    if thread_musica is not None and thread_musica.is_alive():
-        print("[PLAY] Parando música anterior...")
-        musica_stop_event.set()
-        thread_musica.join(timeout=1)
-
-    musica_stop_event.clear()
-
-    thread_musica = threading.Thread(
-        target=tocar_melodia,
-        args=(musica_completa, musica_stop_event),
-        daemon=True
-    )
-
-    thread_musica.start()
-
+    thread_batida.join(timeout=1)
 
 # =========================
 # FUNÇÕES DA SERIAL
@@ -395,23 +328,6 @@ def listar_portas():
         print(f"{porta.device} - {porta.description}")
 
 
-def converter_notas_recebidas(notas_recebidas):
-    sequencia = []
-
-    for n in notas_recebidas:
-        midi = notas_map.get(n["nota"])
-
-        if midi is not None:
-            sequencia.append({
-                "nota": midi,
-                "inicio": n["inicio"],
-                "duracao": n["duracao"],
-            })
-        else:
-            print(f"[AVISO] Nota desconhecida recebida: {n['nota']}")
-
-    return sequencia
-
 
 def montar_musica_completa(sequencia):
     estado = snapshot_estado_musica()
@@ -425,163 +341,82 @@ def montar_musica_completa(sequencia):
 
     return musica_completa
 
-
-def gerar_musica_com_retry(musica_completa, tentativas=3):
-    for tentativa in range(1, tentativas + 1):
-        try:
-            print(f"[IA] Tentativa {tentativa}/{tentativas}...")
-            return gerar_sequencia_musical(musica_completa), True
-
-        except Exception as erro:
-            print(f"[IA] Falha na tentativa {tentativa}: {erro}")
-
-            if tentativa < tentativas:
-                time.sleep(2)
-
-    print("[IA] Todas as tentativas falharam. Usando música original.")
-    return musica_completa, False
-
-
-def processar_sequencia(dados):
-    sequencia = converter_notas_recebidas(dados["notas"])
-
-    salvar_json(
-        PASTA_ARQUIVOS / "notas.json",
-        {"sequencia": sequencia}
-    )
-
-    print(f"[SEQUENCIA] {len(sequencia)} nota(s) salvas em notas.json")
-
-    musica_completa = montar_musica_completa(sequencia)
-
-    salvar_json(
-        PASTA_ARQUIVOS / "musica_completa.json",
-        musica_completa
-    )
-
-    print("[IA] Gerando música...")
-
-    musica_gerada, usou_ia = gerar_musica_com_retry(musica_completa)
-
-    salvar_json(
-        PASTA_ARQUIVOS / "musica_gerada.json",
-        musica_gerada
-    )
-
-    if usou_ia:
-        print("[IA] Música gerada e salva em musica_gerada.json")
-        print("[PLAY] Tocando música GERADA PELA IA...")
-    else:
-        print("[PLAY] Tocando música ORIGINAL, sem IA...")
-
-    tocar_musica_em_thread(musica_gerada)
-
-
-def processar_configuracao(dados):
-    global instrumento_atual
-
-    instrumento = instrumentos_map.get(dados["instrumento"], "piano")
-    bpm = dados["bpm"]
-    estilo = estilo_map.get(dados["estilo"], "rock")
-
-    with estado_lock:
-        estado_musica["instrumento"] = instrumento
-        estado_musica["bpm"] = bpm
-        estado_musica["estilo"] = estilo
-
-    instrumento_atual = instrumento
-
-    salvar_json(
-        PASTA_ARQUIVOS / "parametros.json",
-        snapshot_estado_musica()
-    )
-
-    print(
-        "[CONFIG] "
-        f"instrumento={instrumento} "
-        f"bpm={bpm} "
-        f"estilo={estilo}"
-    )
-
-
+#toca em tempo real as teclas
 def processar_tecla(dados):
-    midi = notas_map.get(dados["nota"])
+    nota=notas_map[dados["nota"]]
+    canal=INSTRUMENTOS[instrumento_atual]["canal"]
+    nota_id = dados["nota"]  # ex: "DO"
 
-    if midi is None:
-        print(f"[AVISO] Nota desconhecida: {dados['nota']}")
-        return
-
-    instrumento = instrumento_atual
-
-    if instrumento not in INSTRUMENTOS:
-        print(f"[AVISO] Instrumento atual inválido: {instrumento}")
-        return
-
-    canal = INSTRUMENTOS[instrumento]["canal"]
-
-    nota_id = dados["nota"]
-
+    #toca e para de tocar de acordo com a ativa
     if dados["ativa"]:
-        fs.noteon(canal, midi, 100)
-
-        inicio_loop = obter_posicao_no_loop()
-
+        # toca ao vivo
+        fs.noteon(canal, nota, 100)
+        # grava início
+        inicio = obter_posicao_no_loop()
         with loop_lock:
+            #dentro desse lock, criamos uma lista inicial para salvar as notas que foram clicadas (ainda nao sabemos quando vao ser soltas)
             notas_ativas_loop[nota_id] = {
-                "nota": midi,
-                "inicio": inicio_loop,
-                "instrumento": instrumento,
+                "nota": nota,
+                "inicio": inicio,
+                "instrumento": instrumento_atual,
             }
-
-        print(f"[TECLA] PRESS {dados['nota']} | salvo início no loop em {inicio_loop} ms")
-
     else:
-        fs.noteoff(canal, midi)
-
-        fim_loop = obter_posicao_no_loop()
-
+        fs.noteoff(canal, nota)
+        # grava fim
+        fim = obter_posicao_no_loop()
         with loop_lock:
+            #verifica se a nota que soltamos esta de fato dentro da lista anterior que criamos
             if nota_id in notas_ativas_loop:
-                nota_salva = notas_ativas_loop.pop(nota_id)
-
-                inicio = nota_salva["inicio"]
-
-                if fim_loop >= inicio:
-                    duracao = fim_loop - inicio
+                #se sim, salva a nota em especifico e retira ela da lista
+                salva = notas_ativas_loop.pop(nota_id)
+                inicio = salva["inicio"]
+                #calculo para saber onde encaixar a nota no loop da batida
+                if fim >= inicio:
+                    duracao = fim - inicio
                 else:
-                    duracao = duracao_ciclo_atual - inicio + fim_loop
-
-                if duracao < 50:
-                    duracao = 100
-
+                    duracao = duracao_ciclo_atual - inicio + fim
+                #adiciona no loop, toca junto e nao é um arquivo .json
                 loop_notas.append({
-                    "nota": nota_salva["nota"],
+                    "nota": salva["nota"],
                     "inicio": inicio,
                     "duracao": duracao,
-                    "instrumento": nota_salva["instrumento"],
+                    "instrumento": salva["instrumento"],
                 })
 
-                print(
-                    f"[LOOP] Nota salva: {dados['nota']} "
-                    f"inicio={inicio} duracao={duracao}"
-                )
+#converte a lista, de nota para numero identificador SOL-> 67
+def converter_notas_recebidas(notas_recebidas):
+    conversao=[]
+    for notas in notas_recebidas:
+        novo=notas.copy()
+        novo["nota"]=notas_map[notas["nota"]]
+        conversao.append(novo)
+    return conversao
 
-        print(f"[TECLA] RELEASE {dados['nota']}")
+#recebe o json do arduino, modifica com a IA e toca
+def processar_sequencia(sequencia_notas_recebidas):
+    #converte as notas SOL-> 67
+    convertidas=converter_notas_recebidas(sequencia_notas_recebidas["notas"])
+    #monta a musica de acordo com as configuracoes recebidas
+    musica_completa=montar_musica_completa(convertidas)
+    #modifica a musica com a IA
+    #se for teste nao roda esse trecho
+    musica_ia=gerar_sequencia_musical(musica_completa)
+    #toca a musica em thread
+    tocar_musica_em_thread(musica_ia)
 
-
+#recebe dados do arduino e verifica qual funcao usar
 def processar_dados(dados):
+    #se tem notas, significa que é a sequencia
     if "notas" in dados:
         processar_sequencia(dados)
-
+    #se tem instrumento e bpm significa que é a configuracao
     elif "instrumento" in dados and "bpm" in dados:
         processar_configuracao(dados)
-
+    #se tem nota (singular) e ativa significa que é a nota padrao
     elif "nota" in dados and "ativa" in dados:
         processar_tecla(dados)
-
     else:
         print(f"[OUTRO] {dados}")
-
 
 # =========================
 # TESTE SEM ARDUINO
@@ -591,9 +426,9 @@ def testar_sem_arduino():
     print("\n[TESTE] Rodando sem Arduino...\n")
 
     dados_config = {
-        "instrumento": "Orgao",
+        "instrumento": "orgao",
         "bpm": 120,
-        "estilo": "Rock"
+        "estilo": "rock"
     }
 
     processar_configuracao(dados_config)
@@ -624,7 +459,7 @@ def testar_sem_arduino():
         ]
     }
 
-    processar_sequencia(dados_notas)
+    processar_dados(dados_notas)
 
     time.sleep(5)
 
@@ -637,58 +472,26 @@ def testar_sem_arduino():
 
 def main():
     iniciar_batida()
-
     listar_portas()
-
-    porta = input(
-        "\nDigite a porta do Arduino ou ENTER para modo teste: "
-    ).strip()
-
+    
+    porta = input("\nDigite a porta do Arduino ou ENTER para modo teste: ").strip()
+    
     if porta == "":
-        try:
-            testar_sem_arduino()
-
-        finally:
-            parar_batida()
-            musica_stop_event.set()
-            fs.delete()
-
-        return
-
-    try:
-        ser = serial.Serial(porta, 9600, timeout=2)
-        print(f"\nConectado em {porta}. Aguardando dados...\n")
-
-    except Exception as erro:
-        print(f"Erro ao abrir porta: {erro}")
+        testar_sem_arduino()
         parar_batida()
+        musica_stop_event.set()
         fs.delete()
         return
-
+    
+    ser = serial.Serial(porta, 9600, timeout=2)
+    print(f"\nConectado em {porta}. Aguardando dados...\n")
+    
     while True:
-        try:
-            linha = ser.readline().decode("utf-8").strip()
-
-            if not linha:
-                continue
-
-            try:
-                dados = json.loads(linha)
-                processar_dados(dados)
-
-            except json.JSONDecodeError:
-                print(f"[RAW] {linha}")
-
-        except KeyboardInterrupt:
-            print("\nEncerrando.")
-
-            ser.close()
-
-            parar_batida()
-            musica_stop_event.set()
-
-            fs.delete()
-            break
+        linha = ser.readline().decode("utf-8").strip()
+        if not linha:
+            continue
+        dados = json.loads(linha)
+        processar_dados(dados)
 
 
 main()

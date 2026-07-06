@@ -32,8 +32,10 @@ unsigned long tempos[MAX_NOTAS]; // duração de cada nota
 unsigned long pausas[MAX_NOTAS]; // pausa antes de cada nota
 int total_de_notas = 0;
 
-unsigned long tempo_inicio = 0;         // quando a nota atual começou
-unsigned long tempo_ultimo_release = 0; // quando a última nota foi solta
+unsigned long tempo_inicio[7] = {0}; // um por tecla, pra não misturar quando duas são pressionadas juntas
+unsigned long tempo_ultimo_release = 0;
+unsigned long tempo_inicio_gravacao = 0; // referência fixa do começo da gravação
+int posicao_nota[7] = {-1, -1, -1, -1, -1, -1, -1}; // onde cada tecla foi salva no array
 
 CRGB leds[NUM_LEDS]; //a gente escerve nessa lista e ai FastLED manda pra fita de led
 
@@ -68,8 +70,9 @@ void tecla_pressed(int i) {
   Serial.println("{\"nota\": \"" + notas[i] + "\", \"ativa\": true}");
 
   if (estado_gravacao && total_de_notas < MAX_NOTAS) {
-    pausas[total_de_notas] = millis() - tempo_ultimo_release;
-    tempo_inicio = millis();
+    pausas[total_de_notas] = millis() - tempo_inicio_gravacao;
+    tempo_inicio[i] = millis();
+    posicao_nota[i] = total_de_notas;
     gravacao[total_de_notas] = i;
     total_de_notas++;
   }
@@ -80,8 +83,9 @@ void tecla_released(int i) {
   FastLED.show();
   Serial.println("{\"nota\": \"" + notas[i] + "\", \"ativa\": false}");
 
-  if (estado_gravacao && total_de_notas > 0) {
-    tempos[total_de_notas - 1] = millis() - tempo_inicio;
+  if (estado_gravacao && posicao_nota[i] >= 0) {
+    tempos[posicao_nota[i]] = millis() - tempo_inicio[i];
+    posicao_nota[i] = -1;
     tempo_ultimo_release = millis();
   }
 }
@@ -107,20 +111,34 @@ void whenPressedPlayPause() {
   }
   Serial.println("]}");
 
-  // Reproduz nos LEDs
+  // Reproduz nos LEDs — usa millis pra conseguir acender duas ao mesmo tempo
+  unsigned long duracao_total = 0;
   for (int i = 0; i < total_de_notas; i++) {
-    delay(pausas[i]);
-    leds[gravacao[i]] = CRGB(0, 0, 255);
-    FastLED.show();
-    delay(tempos[i]);
-    leds[gravacao[i]] = CRGB(0, 0, 0);
-    FastLED.show();
+    unsigned long fim = pausas[i] + tempos[i];
+    if (fim > duracao_total) duracao_total = fim;
   }
+
+  unsigned long ref = millis();
+  while (millis() - ref <= duracao_total) {
+    unsigned long t = millis() - ref;
+    for (int i = 0; i < total_de_notas; i++) {
+      if (t >= pausas[i] && t < pausas[i] + tempos[i]) {
+        leds[gravacao[i]] = CRGB(0, 0, 255);
+      } else {
+        leds[gravacao[i]] = CRGB(0, 0, 0);
+      }
+    }
+    FastLED.show();
+    delay(10);
+  }
+  FastLED.clear();
+  FastLED.show();
 }
 
 void whenPressedGravacao() {
   if (!estado_gravacao) {
     total_de_notas = 0;
+    tempo_inicio_gravacao = millis();
     tempo_ultimo_release = millis();
   }
   estado_gravacao = !estado_gravacao;

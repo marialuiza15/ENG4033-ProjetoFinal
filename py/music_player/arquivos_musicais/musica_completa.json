@@ -1,6 +1,27 @@
 {
     "instrumento": "orgao",
-    "bpm": 100,
+    "bpm": 120,
     "estilo": "rock",
-    "sequencia": []
+    "sequencia": [
+        {
+            "nota": 60,
+            "inicio": 0,
+            "duracao": 500
+        },
+        {
+            "nota": 64,
+            "inicio": 500,
+            "duracao": 500
+        },
+        {
+            "nota": 67,
+            "inicio": 1000,
+            "duracao": 500
+        },
+        {
+            "nota": 60,
+            "inicio": 1500,
+            "duracao": 1000
+        }
+    ]
 }
