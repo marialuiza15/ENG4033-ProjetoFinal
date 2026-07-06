@@ -265,7 +265,20 @@ void processarEncoder() {
   telaModificada = true;
 }
 
+void lerBotao() {
+  bool leitura = (digitalRead(ENC_SW) == LOW);
+  if (leitura && !botaoPressionado && (millis() - tempoUltimoBotao > DEBOUNCE_MS)) {
+    botaoPressionado = true;
+    tempoUltimoBotao = millis();
 
+    estadoAtual = (estadoAtual == NAVEGANDO) ? EDITANDO : NAVEGANDO;
+    if (estadoAtual == NAVEGANDO) {
+      imprimirEstadoSerial(); 
+    }
+    telaModificada = true;
+  }
+  if (!leitura) botaoPressionado = false;
+}
 
 void desenharMenu() {
   lcd.clear();
