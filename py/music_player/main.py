@@ -274,7 +274,7 @@ def tocar_musica_em_thread(musica):
     musica_stop_event.clear()
 
     #reiniciando a nova musica
-    thread_musica=threading.Thread(target=tocar_melodia, args=(musica, musica_stop_event), daemon=True)
+    thread_musica=threading.Thread(target=loop_musica, args=(musica, musica_stop_event), daemon=True)
     thread_musica.start()
 
 def loop_batida():
@@ -297,6 +297,20 @@ def loop_batida():
             eventos_completos = eventos + loop_notas.copy()
         #chama a tocar eventos com as configuracoes que criamos
         tocar_eventos(eventos_completos, batida_stop_event, duracao)
+
+def loop_musica(musica,parar_evento):
+    global inicio_ciclo_loop, duracao_ciclo_atual
+    while not parar_evento.is_set():
+        sequencia = preparar_sequencia(musica)
+        duracao = calcular_duracao(sequencia)
+        with loop_lock:
+            inicio_ciclo_loop = time.time()
+            duracao_ciclo_atual = duracao
+            eventos_completos = sequencia + loop_notas.copy()
+        #chama a tocar eventos com as configuracoes que criamos
+        tocar_eventos(eventos_completos, parar_evento, duracao)
+
+
 
 
 def iniciar_batida():
@@ -400,15 +414,16 @@ def processar_sequencia(sequencia_notas_recebidas):
     #monta a musica de acordo com as configuracoes recebidas
     musica_completa=montar_musica_completa(convertidas)
     #modifica a musica com a IA
-    #se for teste nao roda esse trecho
     musica_ia=gerar_sequencia_musical(musica_completa)
+    #para a batida antiga para comecar a batida da IA
+    parar_batida()
     #toca a musica em thread
     tocar_musica_em_thread(musica_ia)
 
 #recebe dados do arduino e verifica qual funcao usar
 def processar_dados(dados):
     if "gravando" in dados:
-        global gravando
+        global gravando, inicio_ciclo_loop
         gravando = dados["gravando"]
         if gravando:
             with loop_lock:
