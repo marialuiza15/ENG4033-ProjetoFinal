@@ -24,9 +24,7 @@ O fluxo principal é:
 ```text
 .
 ├── c++/
-│   ├── controller.ino          # Firmware principal do controlador
-│   ├── lcd_encoder.ino         # Testes/protótipos de LCD e controle
-│   └── teclas.ino              # Testes/protótipos das teclas
+│   └── controller.ino          # Firmware principal do controlador
 ├── py/
 │   ├── ia/
 │   │   ├── audioLeitura.py     # Integração com IA local ou Gemini
